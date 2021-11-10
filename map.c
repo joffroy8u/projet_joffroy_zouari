@@ -1,34 +1,39 @@
 #include <stdlib.h>
-#include <stdio.h>*
+#include <stdio.h>
 #include "map.h"
 
-char* lire_fichier(const char* nomFichier){
+char* lire_fichier(const char* nomFichier, int* size){
     
-    FILE* map;
+    FILE* map_file;
     int c, n = 0;
     
-    map = fopen("map.txt", "r");
     
-    if(map = NULL){
+    map_file = fopen(nomFichier, "r");
+    
+    if(map_file == NULL){
         
         perror ("Error opening file");
     }
     
-    else{
-        
-        do{
-            
-            c = fgetc(map);
-            printf("%c", c);
+    c = fgetc(map_file);
+    *size += (int)(c - '0') * 10;
+    c = fgetc(map_file);
+    *size += (int)(c - '0');
+
+    char* map = (char*)malloc(sizeof(char) * (*size) * (*size));
+
+    do{
+        c = fgetc(map_file);
+        if(c == '0' || c == ' '){
+            map[n] = c;
             n++;
+        }
             
-        }while (c != EOF);
+            
+    }while (c != EOF);
         
-        fclose(map);
-        printf("File contains %d caracteres \n", n);
-        
-    }
-    
-    return 0;
+    fclose(map_file);
+
+    return map;
     
 }

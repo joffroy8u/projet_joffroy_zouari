@@ -4,9 +4,10 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <math.h>
-#include "map.h"
 
 #include "renderer.h"
+#include "player.h"
+#include "map.h"
 
 int main(int argc, char *argv[]){
 
@@ -45,17 +46,37 @@ int main(int argc, char *argv[]){
     int map_width = 16;
     int map_height = 16;
 
-    char* map = lire_fichier("map.txt");
-    
+    int size = 0;
+    char* map = lire_fichier("map.txt", &size);
+    //printf("%s\n", map);
+                //"0000000000000000"\
+                "0 0            0"\
+                "0 0            0"\
+                "000    00000   0"\
+                "0     0        0"\
+                "0     0     0000"\
+                "0    000       0"\
+                "000  000       0"\
+                "0    00000000  0"\
+                "0    0000      0"\
+                "0       0      0"\
+                "0       0  00000"\
+                "0     000      0"\
+                "0000           0"\
+                "0              0"\
+                "0000000000000000";
+
     float player_angle = 3.14/2.;
     float player_x = 3;
     float player_y = 3;
-    float turn_speed = 1.5;
+    float turn_speed = 1.2;
     float move_speed = 4.;
 
     int last_ticks = 0;
     float turn_velocity = 0.;
     float move_velocity = 0.;
+
+    player_t* player = init_player(3,3);
 
     while(!end){
 
@@ -72,7 +93,6 @@ int main(int argc, char *argv[]){
                 end = true;
             }
                 
-            
             if(events.type == SDL_KEYDOWN && events.key.repeat == 0){
                 switch(events.key.keysym.sym)
                 {
@@ -80,16 +100,16 @@ int main(int argc, char *argv[]){
                         end = true;
                         break;
                     case SDLK_z:
-                        move_velocity = move_speed * delta_time;
+                        player->move_velocity = move_speed * delta_time;
                         break;
                     case SDLK_s:
-                        move_velocity = -move_speed * delta_time;
+                        player->move_velocity = -move_speed * delta_time;
                         break;
                     case SDLK_d:
-                        turn_velocity = turn_speed * delta_time;
+                        player->turn_velocity = turn_speed * delta_time;
                         break;
                     case SDLK_q:
-                        turn_velocity = - turn_speed * delta_time;
+                        player->turn_velocity = -turn_speed * delta_time;
                         break;
                 }
             }
@@ -98,26 +118,26 @@ int main(int argc, char *argv[]){
                 switch(events.key.keysym.sym)
                 {
                     case SDLK_z:
-                        move_velocity = 0.;
+                        player->move_velocity = 0.;
                         break;
                     case SDLK_s:
-                        move_velocity = 0.;
+                        player->move_velocity = 0.;
                         break;
                     case SDLK_d:
-                        turn_velocity = 0.;
+                        player->turn_velocity = 0.;
                         break;
                     case SDLK_q:
-                        turn_velocity = 0.;
+                        player->turn_velocity = 0.;
                         break;
                 }
             }
         }
         
-        player_angle += turn_velocity;
-        player_x += move_velocity * cos(player_angle);
-        player_y += move_velocity * sin(player_angle);
+        player->angle += player->turn_velocity;
+        player->pos_x += player->move_velocity * cos(player->angle);
+        player->pos_y += player->move_velocity * sin(player->angle);
     
-        render(img, wall_tex, map, w, h, player_x, player_y, player_angle);
+        render(img, wall_tex, map, player, w, h);
 
         SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
         SDL_RenderClear(renderer);
@@ -129,6 +149,8 @@ int main(int argc, char *argv[]){
 
     free(img);
     free(wall_tex);
+    free(player);
+    free(map);
 
     TTF_Quit();
 

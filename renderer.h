@@ -4,6 +4,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "player.h"
+
 #endif
 
 uint32_t* init_texture(int width, int height, uint32_t color);
@@ -12,4 +14,4 @@ void clear_texture(uint32_t* texture, int width, int height);
 uint32_t convert_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 uint32_t* init_walltexture(char* filename);
 
-void render(uint32_t* texture, uint32_t* wall_tex, char* map, int width, int height, float player_x, float player_y, float player_angle);
+void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height);

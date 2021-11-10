@@ -72,7 +72,7 @@ uint32_t* init_walltexture(char* filename){
     return img;
 }
 
-void render(uint32_t* texture, uint32_t* wall_tex, char* map, int width, int height, float player_x, float player_y, float player_angle){
+void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height){
 
     clear_texture(texture, width, height);
 
@@ -80,16 +80,17 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, int width, int hei
     float fov = 3.14 / 3.;
  
     for (int i = 0; i < width; i++) { 
-        float angle = player_angle-fov/2 + fov * i / (float)width;
+        float angle = (player->angle)-fov/2 + fov * i / (float)width;
         for (float c = 0; c<30; c+=.01) {
-            float x = player_x + c*cos(angle);
-            float y = player_y + c*sin(angle);
+            float x = player->pos_x + c*cos(angle);
+            float y = player->pos_y + c*sin(angle);
 
             int map_index = (int)x + (int)y * 16;
             if (map[map_index] != ' '){
                 int texid = map[map_index] - '0';
-                float dst = c*cos(angle-player_angle);
+                float dst = c * cos(angle - (player->angle));
                 int column_height = (int)(height / dst);
+                
                 float hitx = x - floor(x+.5);
                 float hity = y - floor(y+.5);
                 int texcoord_x = hitx * texture_size;

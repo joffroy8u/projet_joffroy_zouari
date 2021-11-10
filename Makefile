@@ -4,7 +4,7 @@ LIBS = -L./SDL2_ttf/.libs -lm
 LDFLAGS = `sdl2-config --cflags --libs` -lSDL2_ttf
 INCLUDES = -I./SDL2_ttf
 EXEC = main
-SRC = main.c renderer.c map.c
+SRC = main.c renderer.c map.c player.c
 OBJ = $(SRC:.c=.o)
 
 all: $(EXEC)
