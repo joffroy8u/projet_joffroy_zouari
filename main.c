@@ -4,6 +4,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <math.h>
+#include "map.h"
 
 #include "renderer.h"
 
@@ -44,23 +45,8 @@ int main(int argc, char *argv[]){
     int map_width = 16;
     int map_height = 16;
 
-    char* map = "0000000000000000"\
-                "0              0"\
-                "0              0"\
-                "0     00000    0"\
-                "0     0        0"\
-                "0     0     0000"\
-                "0    000       0"\
-                "000  000       0"\
-                "0    00000000  0"\
-                "0    0000      0"\
-                "0       0      0"\
-                "0       0  00000"\
-                "0     000      0"\
-                "0000           0"\
-                "0              0"\
-                "0000000000000000";
-
+    char* map = lire_fichier("map.txt");
+    
     float player_angle = 3.14/2.;
     float player_x = 3;
     float player_y = 3;
