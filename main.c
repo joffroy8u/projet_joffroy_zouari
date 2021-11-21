@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 #include <stdbool.h>
 #include <math.h>
 
 #include "renderer.h"
 #include "player.h"
+#include "vector2.h"
 #include "map.h"
 
 int main(int argc, char *argv[]){
@@ -21,7 +23,14 @@ int main(int argc, char *argv[]){
         SDL_Quit();
         return EXIT_FAILURE;
     } 
-    
+
+    if(IMG_Init(IMG_INIT_PNG) < 0)
+    {
+        printf( "Erreur d’initialisation de SDL_image: %s\n", IMG_GetError() );
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }    
+
     int w = 512;
     int h = 512;
 
@@ -43,40 +52,23 @@ int main(int argc, char *argv[]){
     uint32_t* img = init_texture(w, h, 0xffffffff);
     uint32_t* wall_tex = init_walltexture("building.bmp");
 
-    int map_width = 16;
-    int map_height = 16;
+    SDL_Texture *car_texture = load_png("car.png", renderer);
+    SDL_Rect src;
+    SDL_Rect dst;
+    SDL_QueryTexture(car_texture, NULL, NULL, &src.w, &src.h);
+    src.x = 0;
+    src.y = 0;
+    dst.x = 0;
+    dst.y = 0;
+    dst.w = src.w;
+    dst.h = src.h;
 
     int size = 0;
     char* map = lire_fichier("map.txt", &size);
-    //printf("%s\n", map);
-                //"0000000000000000"\
-                "0 0            0"\
-                "0 0            0"\
-                "000    00000   0"\
-                "0     0        0"\
-                "0     0     0000"\
-                "0    000       0"\
-                "000  000       0"\
-                "0    00000000  0"\
-                "0    0000      0"\
-                "0       0      0"\
-                "0       0  00000"\
-                "0     000      0"\
-                "0000           0"\
-                "0              0"\
-                "0000000000000000";
-
-    float player_angle = 3.14/2.;
-    float player_x = 3;
-    float player_y = 3;
-    float turn_speed = 1.2;
-    float move_speed = 4.;
 
     int last_ticks = 0;
-    float turn_velocity = 0.;
-    float move_velocity = 0.;
 
-    player_t* player = init_player(3,3);
+    player_t* player = init_player(init_vector2(6,5));
 
     while(!end){
 
@@ -85,8 +77,6 @@ int main(int argc, char *argv[]){
         if(delta_time == 0)
             delta_time = 1.;
 
-        SDL_RenderClear(renderer);
-    
         while(SDL_PollEvent(&events) != 0){
 
             if(events.type == SDL_QUIT){
@@ -100,16 +90,16 @@ int main(int argc, char *argv[]){
                         end = true;
                         break;
                     case SDLK_z:
-                        player->move_velocity = move_speed * delta_time;
+                        player->accelerating = true;
                         break;
                     case SDLK_s:
-                        player->move_velocity = -move_speed * delta_time;
+                        player->braking = true;
                         break;
                     case SDLK_d:
-                        player->turn_velocity = turn_speed * delta_time;
+                        player->turning_right = true;
                         break;
                     case SDLK_q:
-                        player->turn_velocity = -turn_speed * delta_time;
+                        player->turning_left = true;
                         break;
                 }
             }
@@ -118,30 +108,48 @@ int main(int argc, char *argv[]){
                 switch(events.key.keysym.sym)
                 {
                     case SDLK_z:
-                        player->move_velocity = 0.;
+                        player->accelerating = false;
                         break;
                     case SDLK_s:
-                        player->move_velocity = 0.;
+                        player->braking = false;
                         break;
                     case SDLK_d:
-                        player->turn_velocity = 0.;
+                        player->turning_right = false;
                         break;
                     case SDLK_q:
-                        player->turn_velocity = 0.;
+                        player->turning_left = false;
                         break;
                 }
             }
         }
+
+        //printf("%f\n", player->move_velocity);
+
+        bool collision = false;
+
+        float left_wheel_x = player->back_wheel_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+        float left_wheel_y = player->back_wheel_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+        float right_wheel_x = player->back_wheel_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+        float right_wheel_y = player->back_wheel_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+
+        int map_index_left = (int)(left_wheel_x * .5) + (int)(left_wheel_y * .5) * size;
+        int map_index_right = (int)(right_wheel_x * .5) + (int)(right_wheel_y * .5) * size;
+        if(map[map_index_left] != ' ' || map[map_index_right] != ' '){
+            collision = player->move_velocity > 0.08;
+        } 
+
+        //printf("%f,%f\n", player->pos_x, player->pos_y);
         
-        player->angle += player->turn_velocity;
-        player->pos_x += player->move_velocity * cos(player->angle);
-        player->pos_y += player->move_velocity * sin(player->angle);
-    
-        render(img, wall_tex, map, player, w, h);
+        //printf("%f\n", player->move_velocity);
+
+        update_physics(player, collision, delta_time);
+
+        render(img, wall_tex, map, player, w, h, size);
 
         SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, main_texture, NULL, NULL);
+        SDL_RenderCopy(renderer, car_texture, &src, &dst);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(5);
@@ -149,7 +157,7 @@ int main(int argc, char *argv[]){
 
     free(img);
     free(wall_tex);
-    free(player);
+    free_player(player);
     free(map);
 
     TTF_Quit();

@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -72,24 +73,44 @@ uint32_t* init_walltexture(char* filename){
     return img;
 }
 
-void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height){
+SDL_Texture* load_png(const char* nomfichier, SDL_Renderer* renderer)
+{
+    SDL_Surface* surface = IMG_Load(nomfichier);
+    SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+    SDL_FreeSurface(surface);
+
+    if(formattedSurface == NULL)
+    {
+        printf( "Erreur lors du chargement de l'image %s! Erreur: %s\n", nomfichier, IMG_GetError());
+    }
+  
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, formattedSurface);
+  SDL_FreeSurface(formattedSurface);
+  return texture;
+}
+
+void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height, int map_size){
 
     clear_texture(texture, width, height);
 
-    int texture_size = 256;
+    int texture_size = 64;
     float fov = 3.14 / 3.;
- 
-    for (int i = 0; i < width; i++) { 
-        float angle = (player->angle)-fov/2 + fov * i / (float)width;
-        for (float c = 0; c<30; c+=.01) {
-            float x = player->pos_x + c*cos(angle);
-            float y = player->pos_y + c*sin(angle);
 
-            int map_index = (int)x + (int)y * 16;
+    for (int i = 0; i < width; i++) { 
+        float angle = (player->cam_angle)-fov/2 + fov * i / (float)width;
+        int startIndex = (int)player->cam_position->x + (int)player->cam_position->y * map_size;
+        float lod = .01;
+        float cos_angle = cos(angle);
+        float sin_angle = sin(angle);
+        for (float c = 0; c<30; c+=lod) {
+            float x = (player->cam_position->x + c * cos_angle) * .5;
+            float y = (player->cam_position->y + c * sin_angle) * .5;
+
+            int map_index = (int)x + (int)y * map_size;
             if (map[map_index] != ' '){
                 int texid = map[map_index] - '0';
-                float dst = c * cos(angle - (player->angle));
-                int column_height = (int)(height / dst);
+                float dst = c * cos(angle - (player->cam_angle));
+                int column_height = (int)(height / dst) * 2.;
                 
                 float hitx = x - floor(x+.5);
                 float hity = y - floor(y+.5);
@@ -103,16 +124,23 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
 
                 uint32_t* column = draw_column(wall_tex, texture_size, 1, 0, texcoord_x, column_height);
 
-                int offset = (int)(height * 0.4);
-                for (int j=0; j<column_height; j++) {
-                    int pix_y = j + width/2-column_height/2 - offset;
-                    if (pix_y<0 || pix_y>=(int)height) 
-                        continue;
-                    texture[i + pix_y*width] = column[j];
+                int offset = (int)(height * 0.45);
+                int min_y = width/2-column_height/2 - offset;
+                int max_y = width/2+column_height/2 - offset;
+                for (int j=0; j<height; j++) {                    
+                    if(j < min_y)
+                        texture[i + j*width] = 0xbce7ffff;
+                    else if(j >= max_y)
+                        texture[i + j*width] = 0x737373ff;
+                    else
+                        texture[i + j*width] = column[j-min_y];
                 }
+                
                 free(column);
                 break;
             }
+            if(c > 20)
+                lod += 0.02;
         }
     }
 }
