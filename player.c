@@ -10,7 +10,7 @@ player_t* init_player(vector2_t* position){
     player->move_velocity = 0;
 
     player->cam_position = init_vector2(position->x - CAMERA_DISTANCE, position->y);
-    player->cam_angle = 0;
+    player->cam_angle = -3.14/2.;
 
     player->accelerating = false;
     player->braking = false;
@@ -25,18 +25,40 @@ player_t* init_player(vector2_t* position){
     return player;
 }
 
-void update_physics(player_t* player, bool collision, float dt){
+void update_physics(char* map, int map_size, player_t* player, float dt){
 
     if(player->turning_left)
-        player->turn_angle = -TURN_RATE / (1. + .5 * fabs(player->move_velocity));
+        player->turn_angle = -TURN_RATE / (1. + .35 * fabs(player->move_velocity));
     else if(player->turning_right)
-        player->turn_angle = TURN_RATE / (1. + .5 * fabs(player->move_velocity));
+        player->turn_angle = TURN_RATE / (1. + .35 * fabs(player->move_velocity));
     else
         player->turn_angle = 0.;
 
-    if(collision){
+    float left_wheel_x = player->back_wheel_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+    float left_wheel_y = player->back_wheel_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+    float right_wheel_x = player->back_wheel_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+    float right_wheel_y = player->back_wheel_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+
+    bool collision_front = (check_collision_wall(map, map_size, left_wheel_x, left_wheel_y)
+                         || check_collision_wall(map, map_size, right_wheel_x, right_wheel_y))
+                         && player->move_velocity >= 0.;
+
+    left_wheel_x = player->cam_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.1) * .5;
+    left_wheel_y = player->cam_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.1) * .5;
+    right_wheel_x = player->cam_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/1.9) * .5;
+    right_wheel_y = player->cam_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/1.9) * .5;
+
+    bool collision_back = (check_collision_wall(map, map_size, left_wheel_x, left_wheel_y)
+                        || check_collision_wall(map, map_size, right_wheel_x, right_wheel_y))
+                        && player->move_velocity <= 0.;
+
+    if(collision_front){
         player->move_velocity = 0;
         player->accelerating = false;
+    }
+    if(collision_back){
+        player->move_velocity = 0;
+        player->braking = false;
     }
 
     if(player->accelerating)
@@ -50,8 +72,8 @@ void update_physics(player_t* player, bool collision, float dt){
         player->move_velocity = -1;
 
     if(!player->accelerating && !player->braking){
-        if(fabs(player->move_velocity) > 0.08){
-            player->move_velocity *= 0.96;
+        if(fabs(player->move_velocity) > MIN_SPEED){
+            player->move_velocity *= FRICTION;
         }else{
             player->move_velocity = 0;
         }
@@ -62,7 +84,7 @@ void update_physics(player_t* player, bool collision, float dt){
     player->back_wheel_position->x = player->position->x - WHEEL_SPACING * .5 * cos(player->cam_angle);
     player->back_wheel_position->y = player->position->y - WHEEL_SPACING * .5 * sin(player->cam_angle);
 
-    if(!collision){
+    if(!collision_front && !collision_back){
         player->back_wheel_position->x += player->move_velocity * cos(player->cam_angle) * dt;
         player->back_wheel_position->y += player->move_velocity * sin(player->cam_angle) * dt;
         player->front_wheel_position->x += player->move_velocity * cos(player->cam_angle + player->turn_angle) * dt;
@@ -75,6 +97,18 @@ void update_physics(player_t* player, bool collision, float dt){
                               player->front_wheel_position->x - player->back_wheel_position->x);
     player->cam_position->x = player->position->x - CAMERA_DISTANCE * cos(player->cam_angle);
     player->cam_position->y = player->position->y - CAMERA_DISTANCE * sin(player->cam_angle);
+}
+
+bool check_collision_wall(char* map, int map_size, float pos_x, float pos_y){
+
+    int index = (int)(pos_x * .5) + (int)(pos_y * .5) * map_size;
+    return map[index] != ' ' && map[index] != '=';
+}
+
+bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y){
+
+    int index = (int)(pos_x * .5) + (int)(pos_y * .5) * map_size;
+    return map[index] == '=';
 }
 
 void free_player(player_t* player){

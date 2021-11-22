@@ -7,9 +7,7 @@ char* lire_fichier(const char* nomFichier, int* size){
     FILE* map_file;
     int c, n = 0;
     
-    
     map_file = fopen(nomFichier, "r");
-    
     if(map_file == NULL){
         
         perror ("Error opening file");
@@ -21,19 +19,19 @@ char* lire_fichier(const char* nomFichier, int* size){
     *size += (int)(c - '0');
 
     char* map = (char*)malloc(sizeof(char) * (*size) * (*size));
-
     do{
         c = fgetc(map_file);
-        if(c == '0' || c == ' '){
+        if(c == '0' || c == ' ' || c == '='){
             map[n] = c;
             n++;
         }
-            
-            
     }while (c != EOF);
         
     fclose(map_file);
-
     return map;
-    
+}
+
+vector2_t* get_player_position(char* map, int size){
+
+
 }

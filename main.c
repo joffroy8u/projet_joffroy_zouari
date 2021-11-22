@@ -68,7 +68,11 @@ int main(int argc, char *argv[]){
 
     int last_ticks = 0;
 
-    player_t* player = init_player(init_vector2(6,5));
+    player_t* player = init_player(init_vector2(7,14));
+
+    float total_timer = 0;
+    float current_lap_timer = 0;
+    bool on_finish_line = false;
 
     while(!end){
 
@@ -76,6 +80,9 @@ int main(int argc, char *argv[]){
         last_ticks = SDL_GetTicks();
         if(delta_time == 0)
             delta_time = 1.;
+
+        total_timer += delta_time;
+        current_lap_timer += delta_time;
 
         while(SDL_PollEvent(&events) != 0){
 
@@ -123,26 +130,18 @@ int main(int argc, char *argv[]){
             }
         }
 
-        //printf("%f\n", player->move_velocity);
+        if(check_collision_finish(map, size, player->position->x, player->position->y) && player->move_velocity > 0){
+            if(!on_finish_line){
+                printf("Whole time = %f\n", total_timer);
+                printf("Last lap = %f\n", current_lap_timer);
+                current_lap_timer = 0;
+            }
+            on_finish_line = true;
+        }else{
+            on_finish_line = false;
+        }
 
-        bool collision = false;
-
-        float left_wheel_x = player->back_wheel_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
-        float left_wheel_y = player->back_wheel_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
-        float right_wheel_x = player->back_wheel_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
-        float right_wheel_y = player->back_wheel_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
-
-        int map_index_left = (int)(left_wheel_x * .5) + (int)(left_wheel_y * .5) * size;
-        int map_index_right = (int)(right_wheel_x * .5) + (int)(right_wheel_y * .5) * size;
-        if(map[map_index_left] != ' ' || map[map_index_right] != ' '){
-            collision = player->move_velocity > 0.08;
-        } 
-
-        //printf("%f,%f\n", player->pos_x, player->pos_y);
-        
-        //printf("%f\n", player->move_velocity);
-
-        update_physics(player, collision, delta_time);
+        update_physics(map, size, player, delta_time);
 
         render(img, wall_tex, map, player, w, h, size);
 
@@ -152,7 +151,7 @@ int main(int argc, char *argv[]){
         SDL_RenderCopy(renderer, car_texture, &src, &dst);
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(5);
+        SDL_Delay(10);
     }
 
     free(img);

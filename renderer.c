@@ -102,12 +102,12 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
         float lod = .01;
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
-        for (float c = 0; c<30; c+=lod) {
+        for (float c = 0; c<40; c+=lod) {
             float x = (player->cam_position->x + c * cos_angle) * .5;
             float y = (player->cam_position->y + c * sin_angle) * .5;
 
             int map_index = (int)x + (int)y * map_size;
-            if (map[map_index] != ' '){
+            if (map[map_index] == '0'){
                 int texid = map[map_index] - '0';
                 float dst = c * cos(angle - (player->cam_angle));
                 int column_height = (int)(height / dst) * 2.;
@@ -139,7 +139,7 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
                 free(column);
                 break;
             }
-            if(c > 20)
+            if(c > 25)
                 lod += 0.02;
         }
     }

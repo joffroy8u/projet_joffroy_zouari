@@ -5,11 +5,13 @@
 #include <stdbool.h>
 #include "vector2.h"
 
-#define ACCELERATION_RATE 0.07
-#define BRAKING_FORCE 0.1
+#define ACCELERATION_RATE 0.5
+#define BRAKING_FORCE 0.15
+#define FRICTION 0.98
 #define TURN_RATE 3.14/2.
-#define MAX_SPEED 5.
-#define WHEEL_SPACING 2.75
+#define MIN_SPEED 0.1
+#define MAX_SPEED 50.
+#define WHEEL_SPACING 2.6
 #define CAMERA_DISTANCE 3.4
 #define CAR_WIDTH .6
 
@@ -31,7 +33,9 @@ struct player_s {
 typedef struct player_s player_t;
 
 player_t* init_player(vector2_t* position);
-void update_physics(player_t* player, bool collision, float dt);
+void update_physics(char* map, int map_size, player_t* player, float dt);
+bool check_collision_wall(char* map, int map_size, float pos_x, float pos_y);
+bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y);
 void free_player(player_t* player);
 
 #endif
