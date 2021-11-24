@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
 
     int last_ticks = 0;
 
-    player_t* player = init_player(init_vector2(7,14));
+    player_t* player = init_player(init_vector2(14,28));
 
     float total_timer = 0;
     float current_lap_timer = 0;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]){
             }
         }
 
-        if(check_collision_finish(map, size, player->position->x, player->position->y) && player->move_velocity > 0){
+        if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
             if(!on_finish_line){
                 printf("Whole time = %f\n", total_timer);
                 printf("Last lap = %f\n", current_lap_timer);

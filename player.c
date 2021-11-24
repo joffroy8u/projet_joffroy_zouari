@@ -34,10 +34,10 @@ void update_physics(char* map, int map_size, player_t* player, float dt){
     else
         player->turn_angle = 0.;
 
-    float left_wheel_x = player->back_wheel_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
-    float left_wheel_y = player->back_wheel_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
-    float right_wheel_x = player->back_wheel_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
-    float right_wheel_y = player->back_wheel_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+    float left_wheel_x = player->front_wheel_position->x - CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+    float left_wheel_y = player->front_wheel_position->y - CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
+    float right_wheel_x = player->front_wheel_position->x + CAR_WIDTH * cos(player->cam_angle + 3.14/2.) * .5;
+    float right_wheel_y = player->front_wheel_position->y + CAR_WIDTH * sin(player->cam_angle + 3.14/2.) * .5;
 
     bool collision_front = (check_collision_wall(map, map_size, left_wheel_x, left_wheel_y)
                          || check_collision_wall(map, map_size, right_wheel_x, right_wheel_y))
@@ -101,13 +101,13 @@ void update_physics(char* map, int map_size, player_t* player, float dt){
 
 bool check_collision_wall(char* map, int map_size, float pos_x, float pos_y){
 
-    int index = (int)(pos_x * .5) + (int)(pos_y * .5) * map_size;
+    int index = (int)(pos_x * .25) + (int)(pos_y * .25) * map_size;
     return map[index] != ' ' && map[index] != '=';
 }
 
 bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y){
 
-    int index = (int)(pos_x * .5) + (int)(pos_y * .5) * map_size;
+    int index = (int)(pos_x * .25) + (int)(pos_y * .25) * map_size;
     return map[index] == '=';
 }
 

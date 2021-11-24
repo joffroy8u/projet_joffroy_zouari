@@ -99,18 +99,18 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
     for (int i = 0; i < width; i++) { 
         float angle = (player->cam_angle)-fov/2 + fov * i / (float)width;
         int startIndex = (int)player->cam_position->x + (int)player->cam_position->y * map_size;
-        float lod = .01;
+        float lod = 0.01;
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
-        for (float c = 0; c<40; c+=lod) {
-            float x = (player->cam_position->x + c * cos_angle) * .5;
-            float y = (player->cam_position->y + c * sin_angle) * .5;
+        for (float c = 0; c<80; c+=lod) {
+            float x = (player->cam_position->x + c * cos_angle) * .25;
+            float y = (player->cam_position->y + c * sin_angle) * .25;
 
             int map_index = (int)x + (int)y * map_size;
             if (map[map_index] == '0'){
                 int texid = map[map_index] - '0';
                 float dst = c * cos(angle - (player->cam_angle));
-                int column_height = (int)(height / dst) * 2.;
+                int column_height = (int)(height / dst) * 4.;
                 
                 float hitx = x - floor(x+.5);
                 float hity = y - floor(y+.5);
@@ -124,7 +124,7 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
 
                 uint32_t* column = draw_column(wall_tex, texture_size, 1, 0, texcoord_x, column_height);
 
-                int offset = (int)(height * 0.45);
+                int offset = (int)(height * 0.4);
                 int min_y = width/2-column_height/2 - offset;
                 int max_y = width/2+column_height/2 - offset;
                 for (int j=0; j<height; j++) {                    
@@ -139,7 +139,9 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
                 free(column);
                 break;
             }
-            if(c > 25)
+            if(c > 30 && c < 50)
+                lod = 0.03;
+            else if(c >= 50)
                 lod += 0.02;
         }
     }

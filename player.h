@@ -5,15 +5,15 @@
 #include <stdbool.h>
 #include "vector2.h"
 
-#define ACCELERATION_RATE 0.5
+#define ACCELERATION_RATE 0.06
 #define BRAKING_FORCE 0.15
 #define FRICTION 0.98
-#define TURN_RATE 3.14/2.
+#define TURN_RATE 3.14/3.
 #define MIN_SPEED 0.1
-#define MAX_SPEED 50.
-#define WHEEL_SPACING 2.6
+#define MAX_SPEED 10.
+#define WHEEL_SPACING 2.7
 #define CAMERA_DISTANCE 3.4
-#define CAR_WIDTH .6
+#define CAR_WIDTH 1.25
 
 struct player_s {
     
