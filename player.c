@@ -28,9 +28,9 @@ player_t* init_player(vector2_t* position){
 void update_physics(char* map, int map_size, player_t* player, float dt){
 
     if(player->turning_left)
-        player->turn_angle = -TURN_RATE / (1. + .35 * fabs(player->move_velocity));
+        player->turn_angle = -TURN_RATE / (1. + .4 * fabs(player->move_velocity));
     else if(player->turning_right)
-        player->turn_angle = TURN_RATE / (1. + .35 * fabs(player->move_velocity));
+        player->turn_angle = TURN_RATE / (1. + .4 * fabs(player->move_velocity));
     else
         player->turn_angle = 0.;
 

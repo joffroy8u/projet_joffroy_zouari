@@ -7,6 +7,9 @@
 
 #include "renderer.h"
 
+#define SKY_COLOR 0xbce7ffff
+#define GROUND_COLOR 0x737373ff
+
 uint32_t* init_texture(int width, int height, uint32_t color){
 
     uint32_t* texture = (uint32_t*)malloc(sizeof(uint32_t) * width * height);
@@ -73,22 +76,6 @@ uint32_t* init_walltexture(char* filename){
     return img;
 }
 
-SDL_Texture* load_png(const char* nomfichier, SDL_Renderer* renderer)
-{
-    SDL_Surface* surface = IMG_Load(nomfichier);
-    SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_FreeSurface(surface);
-
-    if(formattedSurface == NULL)
-    {
-        printf( "Erreur lors du chargement de l'image %s! Erreur: %s\n", nomfichier, IMG_GetError());
-    }
-  
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, formattedSurface);
-  SDL_FreeSurface(formattedSurface);
-  return texture;
-}
-
 void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height, int map_size){
 
     clear_texture(texture, width, height);
@@ -99,7 +86,7 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
     for (int i = 0; i < width; i++) { 
         float angle = (player->cam_angle)-fov/2 + fov * i / (float)width;
         int startIndex = (int)player->cam_position->x + (int)player->cam_position->y * map_size;
-        float lod = 0.01;
+        float lod = 0.02;
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
         for (float c = 0; c<80; c+=lod) {
@@ -125,13 +112,13 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
                 uint32_t* column = draw_column(wall_tex, texture_size, 1, 0, texcoord_x, column_height);
 
                 int offset = (int)(height * 0.4);
-                int min_y = width/2-column_height/2 - offset;
-                int max_y = width/2+column_height/2 - offset;
+                int min_y = (width >> 1)-(column_height >> 1) - offset;
+                int max_y = (width >> 1)+(column_height >> 1) - offset;
                 for (int j=0; j<height; j++) {                    
                     if(j < min_y)
-                        texture[i + j*width] = 0xbce7ffff;
+                        texture[i + j*width] = SKY_COLOR;
                     else if(j >= max_y)
-                        texture[i + j*width] = 0x737373ff;
+                        texture[i + j*width] = GROUND_COLOR;
                     else
                         texture[i + j*width] = column[j-min_y];
                 }
@@ -139,9 +126,9 @@ void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, 
                 free(column);
                 break;
             }
-            if(c > 30 && c < 50)
-                lod = 0.03;
-            else if(c >= 50)
+            if(c > 25 && c < 40)
+                lod = 0.04;
+            else if(c >= 40)
                 lod += 0.02;
         }
     }

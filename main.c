@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "SDL_utils.h"
+#include "sprite.h"
 #include "renderer.h"
 #include "player.h"
 #include "vector2.h"
@@ -19,7 +21,7 @@ int main(int argc, char *argv[]){
     bool end = false;
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        printf("Erreur d’initialisation de la SDL: %s",SDL_GetError());
+        printf("Erreur d’initialisation de la SDL: %s\n",SDL_GetError());
         SDL_Quit();
         return EXIT_FAILURE;
     } 
@@ -39,29 +41,25 @@ int main(int argc, char *argv[]){
             SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_RESIZABLE);
     if(window == NULL)
     {
-        printf("Erreur lors de la creation de la fenetre: %s",SDL_GetError());
+        printf("Erreur lors de la creation de la fenetre: %s\n",SDL_GetError());
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+    // Initialisation TTF
     TTF_Init();
+    TTF_Font* font = TTF_OpenFont("arial.ttf", 22);
+    if(!font){
+        printf("Erreur lors du chargement de la police: %s\n", TTF_GetError());
+    }
 
     SDL_Texture *main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, w, h);
     uint32_t* img = init_texture(w, h, 0xffffffff);
     uint32_t* wall_tex = init_walltexture("building.bmp");
 
-    SDL_Texture *car_texture = load_png("car.png", renderer);
-    SDL_Rect src;
-    SDL_Rect dst;
-    SDL_QueryTexture(car_texture, NULL, NULL, &src.w, &src.h);
-    src.x = 0;
-    src.y = 0;
-    dst.x = 0;
-    dst.y = 0;
-    dst.w = src.w;
-    dst.h = src.h;
+    sprite_t* car_sprite = init_sprite(renderer, "car.png", 0, 0);
 
     int size = 0;
     char* map = lire_fichier("map.txt", &size);
@@ -70,11 +68,23 @@ int main(int argc, char *argv[]){
 
     player_t* player = init_player(init_vector2(14,28));
 
+    // Initialisation chronometre
     float total_timer = 0;
     float current_lap_timer = 0;
     bool on_finish_line = false;
 
+    SDL_Color black = {0,0,0,255};
+    SDL_Texture* text;
+    SDL_Rect text_pos;
+    text_pos.x = 10;
+    text_pos.y = 5;
+    char time_str[7] = "000.000";
+    text = load_text(time_str, renderer, font, black);
+    SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
+    
     while(!end){
+
+        SDL_DestroyTexture(text);
 
         float delta_time = (SDL_GetTicks() - last_ticks) / 1000.;
         last_ticks = SDL_GetTicks();
@@ -83,6 +93,10 @@ int main(int argc, char *argv[]){
 
         total_timer += delta_time;
         current_lap_timer += delta_time;
+
+        sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
+        text = load_text(time_str, renderer, font, black);
+        SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
 
         while(SDL_PollEvent(&events) != 0){
 
@@ -132,8 +146,7 @@ int main(int argc, char *argv[]){
 
         if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
             if(!on_finish_line){
-                printf("Whole time = %f\n", total_timer);
-                printf("Last lap = %f\n", current_lap_timer);
+                printf("Temps dernier tour = %f\n", current_lap_timer);
                 current_lap_timer = 0;
             }
             on_finish_line = true;
@@ -148,10 +161,11 @@ int main(int argc, char *argv[]){
         SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, main_texture, NULL, NULL);
-        SDL_RenderCopy(renderer, car_texture, &src, &dst);
+        SDL_RenderCopy(renderer, car_sprite->texture, &car_sprite->src_pos, &car_sprite->dst_pos);
+        SDL_RenderCopy(renderer, text, NULL, &text_pos);
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(10);
+        SDL_Delay(5);
     }
 
     free(img);
@@ -159,7 +173,11 @@ int main(int argc, char *argv[]){
     free_player(player);
     free(map);
 
+    TTF_CloseFont(font);
     TTF_Quit();
+
+    if(text != NULL)
+        SDL_DestroyTexture(text);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
