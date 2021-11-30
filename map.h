@@ -3,7 +3,6 @@
 
 #include "vector2.h"
 
-char* lire_fichier(const char* nomFichier, int* size);
-vector2_t* get_player_position(char* map, int size);
+char* load_map(const char* nomFichier, int* size);
 
 #endif

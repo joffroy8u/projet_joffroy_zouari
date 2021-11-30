@@ -9,6 +9,8 @@
 
 #define SKY_COLOR 0xbce7ffff
 #define GROUND_COLOR 0x737373ff
+#define FOV 1.0467 // PI / 3
+#define MAX_BUILDING_HEIGHT 2.0
 
 uint32_t* init_texture(int width, int height, uint32_t color){
 
@@ -22,18 +24,25 @@ uint32_t* init_texture(int width, int height, uint32_t color){
     return texture;
 }
 
-uint32_t* draw_column(uint32_t* img, int texsize, int ntextures, int texid, int texcoord, int column_height){
+void draw_column(uint32_t* texture, int width, int height, building_t* building, int tex_coord, int x, int min_y, int max_y, float current_height){
 
-    int img_w = texsize*ntextures;
-    int img_h = texsize;
+    int column_height = abs(max_y - min_y);
 
-    uint32_t* column = (uint32_t*)malloc(sizeof(uint32_t) * column_height);
-    for (int y=0; y<column_height; y++) {
-        int pix_x = texid*texsize + texcoord;
-        int pix_y = (y*texsize)/column_height;
-        column[y] = img[pix_x + pix_y*img_w];
+    for (int y = 0; y < height; y++) {
+
+        if(y < min_y){
+            texture[x + y * width] = SKY_COLOR;
+        }
+        else if(y >= max_y){
+            if(current_height <= 1.0)
+                texture[x + y * width] = GROUND_COLOR;
+        }
+        else{
+            int pix_x = tex_coord;
+            int pix_y = ((y - min_y) * building->texture_height) / column_height;
+            texture[x + y * width] = building->texture[pix_x + pix_y * building->texture_width];
+        }
     }
-    return column;
 }
 
 void clear_texture(uint32_t* texture, int width, int height){
@@ -46,90 +55,68 @@ void clear_texture(uint32_t* texture, int width, int height){
     }
 }
 
-uint32_t convert_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return (r<<24) + (g<<16) + (b<<8) + a;
-}
-
-uint32_t* init_walltexture(char* filename){
-
-    SDL_Surface* bmpSurface = SDL_LoadBMP(filename);
-    SDL_Surface* surface = SDL_ConvertSurfaceFormat(bmpSurface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_FreeSurface(bmpSurface);
-
-    int tex_w = surface->w;
-    int tex_h = surface->h;
-
-    uint32_t* img = (uint32_t*)malloc(sizeof(uint32_t) * tex_w * tex_h);
-
-    for(int i = 0; i < tex_w; i++){
-        for(int j = 0; j < tex_h; j++){
-            uint8_t r = ((uint8_t*)(surface->pixels))[(i+j*tex_w)*4+3];
-            uint8_t g = ((uint8_t*)(surface->pixels))[(i+j*tex_w)*4+2];
-            uint8_t b = ((uint8_t*)(surface->pixels))[(i+j*tex_w)*4+1];
-            uint8_t a = ((uint8_t*)(surface->pixels))[(i+j*tex_w)*4+0];
-            img[i+j*tex_w] = convert_color(r, g, b, a);
-        }
-    }
-    
-    SDL_FreeSurface(surface);
-
-    return img;
-}
-
-void render(uint32_t* texture, uint32_t* wall_tex, char* map, player_t* player, int width, int height, int map_size){
+void render(uint32_t* texture, building_t** buildings, char* map, player_t* player, int width, int height, int map_size){
 
     clear_texture(texture, width, height);
 
-    int texture_size = 64;
-    float fov = 3.14 / 3.;
-
+    float inv_width = 1. / (float)width;
+    float width_half = width >> 1;
     for (int i = 0; i < width; i++) { 
-        float angle = (player->cam_angle)-fov/2 + fov * i / (float)width;
+        float angle = (player->cam_angle) - (FOV * 0.5) + FOV * i * inv_width;
         int startIndex = (int)player->cam_position->x + (int)player->cam_position->y * map_size;
-        float lod = 0.02;
+        float lod = 0.015;
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
-        for (float c = 0; c<80; c+=lod) {
+        float cos_angle_minus_cam_angle = cos(angle - (player->cam_angle));
+        float current_height = 0.;
+        int current_max_y = 0;
+        for (float c = 0; c < 60; c+=lod) {
             float x = (player->cam_position->x + c * cos_angle) * .25;
             float y = (player->cam_position->y + c * sin_angle) * .25;
 
+            if(x < 0 || x >= map_size || y < 0 || y >= map_size) break;
+
             int map_index = (int)x + (int)y * map_size;
-            if (map[map_index] == '0'){
-                int texid = map[map_index] - '0';
-                float dst = c * cos(angle - (player->cam_angle));
-                int column_height = (int)(height / dst) * 4.;
-                
+            
+            if (map[map_index] >= '0' && map[map_index] <= '9'){
+                int building_id = map[map_index] - '0';
+                float hit_height = buildings[building_id]->building_height;
+                if(hit_height <= current_height) continue;
+
+                current_height = hit_height;
+
+                int texture_width = buildings[building_id]->texture_width;
+                float dst = c * cos_angle_minus_cam_angle;
+                int column_height = (int)(height / dst) * 4. * hit_height;
+                int column_half_height = (column_height >> 1);
+
                 float hitx = x - floor(x+.5);
                 float hity = y - floor(y+.5);
-                int texcoord_x = hitx * texture_size;
+                int tex_coord_x = hitx * texture_width;
 
                 if(fabs(hity) > fabs(hitx))
-                    texcoord_x = hity * texture_size;
+                    tex_coord_x = hity * texture_width;
 
-                if (texcoord_x<0)
-                    texcoord_x += texture_size;
+                if (tex_coord_x < 0)
+                    tex_coord_x += texture_width;
 
-                uint32_t* column = draw_column(wall_tex, texture_size, 1, 0, texcoord_x, column_height);
-
-                int offset = (int)(height * 0.4);
-                int min_y = (width >> 1)-(column_height >> 1) - offset;
-                int max_y = (width >> 1)+(column_height >> 1) - offset;
-                for (int j=0; j<height; j++) {                    
-                    if(j < min_y)
-                        texture[i + j*width] = SKY_COLOR;
-                    else if(j >= max_y)
-                        texture[i + j*width] = GROUND_COLOR;
-                    else
-                        texture[i + j*width] = column[j-min_y];
-                }
+                int offset = (int)(height * 0.4) + (hit_height > 1.0 ? (int)(column_half_height - column_half_height / hit_height) : 0);
+                int min_y = width_half - column_half_height - offset;
+                int max_y = width_half + column_half_height - offset;
                 
-                free(column);
-                break;
+                if(current_max_y != 0) max_y = current_max_y;
+                
+                draw_column(texture, width, height, buildings[building_id], tex_coord_x, i, min_y, max_y, hit_height);
+                
+                current_max_y = min_y;
+                
+                if(hit_height >= MAX_BUILDING_HEIGHT)
+                    break;
             }
-            if(c > 25 && c < 40)
-                lod = 0.04;
-            else if(c >= 40)
-                lod += 0.02;
+            if(current_height > 0.1){
+                if(c >= 45)
+                    lod = 0.05;
+            }
         }
     }
 }

@@ -27,3 +27,7 @@ SDL_Texture* load_png(const char* nomfichier, SDL_Renderer* renderer)
     SDL_FreeSurface(formattedSurface);
     return texture;
 }
+
+uint32_t convert_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return (r<<24) + (g<<16) + (b<<8) + a;
+}

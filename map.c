@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "map.h"
 
-char* lire_fichier(const char* nomFichier, int* size){
+char* load_map(const char* nomFichier, int* size){
     
     FILE* map_file;
     int c, n = 0;
@@ -21,7 +21,7 @@ char* lire_fichier(const char* nomFichier, int* size){
     char* map = (char*)malloc(sizeof(char) * (*size) * (*size));
     do{
         c = fgetc(map_file);
-        if(c == '0' || c == ' ' || c == '='){
+        if((c >= '0' && c <= '9') || c == ' ' || c == '='){
             map[n] = c;
             n++;
         }
@@ -29,9 +29,4 @@ char* lire_fichier(const char* nomFichier, int* size){
         
     fclose(map_file);
     return map;
-}
-
-vector2_t* get_player_position(char* map, int size){
-
-
 }
