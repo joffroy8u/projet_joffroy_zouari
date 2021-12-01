@@ -84,17 +84,17 @@ int main(int argc, char *argv[]){
     SDL_Color black = {0,0,0,255};
     SDL_Texture* text;
     SDL_Rect text_pos;
-    text_pos.x = 10;
-    text_pos.y = 5;
     char time_str[7] = "000.000";
     text = load_text(time_str, renderer, font, black);
     SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
+    text_pos.x = 10;
+    text_pos.y = h - text_pos.h;
 
     while(!end){
 
         SDL_DestroyTexture(text);
 
-        sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
+        //sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
 
         float delta_time = (SDL_GetTicks() - last_ticks) / 1000.;
         last_ticks = SDL_GetTicks();
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
         current_lap_timer += delta_time;
 
         
-        //sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
+        sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
         text = load_text(time_str, renderer, font, black);
         SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
 
         if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
             if(!on_finish_line){
-                printf("Temps dernier tour = %f\n", current_lap_timer);
+                //printf("Temps dernier tour = %f\n", current_lap_timer);
                 current_lap_timer = 0;
             }
             on_finish_line = true;

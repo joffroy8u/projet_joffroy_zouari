@@ -11,6 +11,7 @@
 #define GROUND_COLOR 0x737373ff
 #define FOV 1.0467 // PI / 3
 #define MAX_BUILDING_HEIGHT 2.0
+#define RENDER_DISTANCE 60
 
 uint32_t* init_texture(int width, int height, uint32_t color){
 
@@ -24,9 +25,9 @@ uint32_t* init_texture(int width, int height, uint32_t color){
     return texture;
 }
 
-void draw_column(uint32_t* texture, int width, int height, building_t* building, int tex_coord, int x, int min_y, int max_y, float current_height){
+void draw_column(uint32_t* texture, int width, int height, building_t* building, int tex_coord, int x, int min_y, int max_y, int max_y_ground, float current_height){
 
-    int column_height = abs(max_y - min_y);
+    int column_height = abs(max_y_ground - min_y);
 
     for (int y = 0; y < height; y++) {
 
@@ -34,7 +35,7 @@ void draw_column(uint32_t* texture, int width, int height, building_t* building,
             texture[x + y * width] = SKY_COLOR;
         }
         else if(y >= max_y){
-            if(current_height <= 1.0)
+            if(current_height < 1.0)
                 texture[x + y * width] = GROUND_COLOR;
         }
         else{
@@ -64,13 +65,13 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
     for (int i = 0; i < width; i++) { 
         float angle = (player->cam_angle) - (FOV * 0.5) + FOV * i * inv_width;
         int startIndex = (int)player->cam_position->x + (int)player->cam_position->y * map_size;
-        float lod = 0.015;
+        float lod = 0.01;
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
         float cos_angle_minus_cam_angle = cos(angle - (player->cam_angle));
         float current_height = 0.;
         int current_max_y = 0;
-        for (float c = 0; c < 60; c+=lod) {
+        for (float c = 0; c < RENDER_DISTANCE; c+=lod) {
             float x = (player->cam_position->x + c * cos_angle) * .25;
             float y = (player->cam_position->y + c * sin_angle) * .25;
 
@@ -87,8 +88,7 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
 
                 int texture_width = buildings[building_id]->texture_width;
                 float dst = c * cos_angle_minus_cam_angle;
-                int column_height = (int)(height / dst) * 4. * hit_height;
-                int column_half_height = (column_height >> 1);
+                int column_half_height = (int)((height / dst) * 2. * hit_height);
 
                 float hitx = x - floor(x+.5);
                 float hity = y - floor(y+.5);
@@ -103,20 +103,22 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
                 int offset = (int)(height * 0.4) + (hit_height > 1.0 ? (int)(column_half_height - column_half_height / hit_height) : 0);
                 int min_y = width_half - column_half_height - offset;
                 int max_y = width_half + column_half_height - offset;
-                
+                int max_y_ground = max_y;
                 if(current_max_y != 0) max_y = current_max_y;
                 
-                draw_column(texture, width, height, buildings[building_id], tex_coord_x, i, min_y, max_y, hit_height);
+                draw_column(texture, width, height, buildings[building_id], tex_coord_x, i, min_y, max_y, max_y_ground, hit_height);
                 
                 current_max_y = min_y;
-                
+
                 if(hit_height >= MAX_BUILDING_HEIGHT)
                     break;
+                
             }
-            if(current_height > 0.1){
+            /*
+            if(current_height > 0.){
                 if(c >= 45)
-                    lod = 0.05;
-            }
+                    lod = 0.02;
+            }*/
         }
     }
 }
