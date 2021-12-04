@@ -181,7 +181,7 @@ int main(int argc, char *argv[]){
         SDL_RenderCopy(renderer, text, NULL, &text_pos);
         SDL_RenderPresent(renderer);
 
-        //SDL_Delay(5);
+        SDL_Delay(5);
     }
 
     free(img);
