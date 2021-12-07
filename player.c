@@ -10,7 +10,7 @@ player_t* init_player(vector2_t* position){
     player->move_velocity = 0;
 
     player->cam_position = init_vector2(position->x - CAMERA_DISTANCE, position->y);
-    player->cam_angle = -3.14/2.;
+    player->cam_angle = 3.14/2.;
 
     player->accelerating = false;
     player->braking = false;

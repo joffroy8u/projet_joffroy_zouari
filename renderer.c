@@ -114,11 +114,11 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
                     break;
                 
             }
-            /*
+            
             if(current_height > 0.){
                 if(c >= 45)
                     lod = 0.02;
-            }*/
+            }
         }
     }
 }

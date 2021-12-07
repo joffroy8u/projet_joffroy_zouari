@@ -8,8 +8,9 @@
 SDL_Texture* load_text(const char* message, SDL_Renderer* renderer, TTF_Font *font, SDL_Color color)
 {
     SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
-
-    return SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
 }
 
 SDL_Texture* load_png(const char* nomfichier, SDL_Renderer* renderer)

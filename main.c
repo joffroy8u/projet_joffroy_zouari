@@ -13,13 +13,18 @@
 #include "vector2.h"
 #include "map.h"
 #include "building.h"
+#include "roads.h"
+#include "menu.h"
 
 int main(int argc, char *argv[]){
 
+    bool debug = false;
+
     SDL_Window* window;
-    SDL_Event events;
+    SDL_Event event;
     SDL_Renderer* renderer;
     bool end = false;
+    bool hide_menu = false;
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Erreur d’initialisation de la SDL: %s\n",SDL_GetError());
@@ -29,7 +34,7 @@ int main(int argc, char *argv[]){
 
     if(IMG_Init(IMG_INIT_PNG) < 0)
     {
-        printf( "Erreur d’initialisation de SDL_image: %s\n", IMG_GetError() );
+        printf("Erreur d’initialisation de SDL_image: %s\n", IMG_GetError() );
         SDL_Quit();
         return EXIT_FAILURE;
     }    
@@ -72,9 +77,11 @@ int main(int argc, char *argv[]){
     int size = 0;
     char* map = load_map("map.txt", &size);
 
+    road_vertex_t** roads = build_roads(map, size);
+
     int last_ticks = 0;
 
-    player_t* player = init_player(init_vector2(14,28));
+    player_t* player = init_player(init_vector2(6,8));
 
     // Initialisation chronometre
     float total_timer = 0;
@@ -90,11 +97,14 @@ int main(int argc, char *argv[]){
     text_pos.x = 10;
     text_pos.y = h - text_pos.h;
 
+    button_t* button_play = init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_play.png", play);
+    button_t* button_quit = init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_quit.png", quit);
+
     while(!end){
 
         SDL_DestroyTexture(text);
 
-        //sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
+        sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
 
         float delta_time = (SDL_GetTicks() - last_ticks) / 1000.;
         last_ticks = SDL_GetTicks();
@@ -105,85 +115,107 @@ int main(int argc, char *argv[]){
         current_lap_timer += delta_time;
 
         
-        sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
+        //sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
         text = load_text(time_str, renderer, font, black);
         SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
 
-        while(SDL_PollEvent(&events) != 0){
+        while(SDL_PollEvent(&event) != 0){
 
-            if(events.type == SDL_QUIT){
+            if(event.type == SDL_QUIT){
                 end = true;
             }
-                
-            if(events.type == SDL_KEYDOWN && events.key.repeat == 0){
-                switch(events.key.keysym.sym)
-                {
-                    case SDLK_ESCAPE:
-                        end = true;
-                        break;
-                    case SDLK_z:
-                        player->accelerating = true;
-                        break;
-                    case SDLK_s:
-                        player->braking = true;
-                        break;
-                    case SDLK_d:
-                        player->turning_right = true;
-                        break;
-                    case SDLK_q:
-                        player->turning_left = true;
-                        break;
+            
+            if(!hide_menu){
+                hide_menu = handle_button_events(button_play, event);
+                end = handle_button_events(button_quit, event);
+            }else{
+                if(event.type == SDL_KEYDOWN && event.key.repeat == 0){
+                    switch(event.key.keysym.sym)
+                    {
+                        case SDLK_ESCAPE:
+                            end = true;
+                            break;
+                        case SDLK_z:
+                            player->accelerating = true;
+                            break;
+                        case SDLK_s:
+                            player->braking = true;
+                            break;
+                        case SDLK_d:
+                            player->turning_right = true;
+                            break;
+                        case SDLK_q:
+                            player->turning_left = true;
+                            break;
+                    }
                 }
-            }
 
-            if(events.type == SDL_KEYUP && events.key.repeat == 0){
-                switch(events.key.keysym.sym)
-                {
-                    case SDLK_z:
-                        player->accelerating = false;
-                        break;
-                    case SDLK_s:
-                        player->braking = false;
-                        break;
-                    case SDLK_d:
-                        player->turning_right = false;
-                        break;
-                    case SDLK_q:
-                        player->turning_left = false;
-                        break;
+                if(event.type == SDL_KEYUP && event.key.repeat == 0){
+                    switch(event.key.keysym.sym)
+                    {
+                        case SDLK_z:
+                            player->accelerating = false;
+                            break;
+                        case SDLK_s:
+                            player->braking = false;
+                            break;
+                        case SDLK_d:
+                            player->turning_right = false;
+                            break;
+                        case SDLK_q:
+                            player->turning_left = false;
+                            break;
+                    }
                 }
             }
         }
 
-        if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
-            if(!on_finish_line){
-                //printf("Temps dernier tour = %f\n", current_lap_timer);
-                current_lap_timer = 0;
-            }
-            on_finish_line = true;
-        }else{
-            on_finish_line = false;
-        }
-
-        update_physics(map, size, player, delta_time);
-
-        render(img, buildings, map, player, w, h, size);
-
-        SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, main_texture, NULL, NULL);
 
-        if((player->braking && player->move_velocity >= 0) || (player->accelerating && player->move_velocity < 0))
-            SDL_RenderCopy(renderer, car_braking_sprite->texture, &car_braking_sprite->src_pos, &car_braking_sprite->dst_pos);
-        else
-            SDL_RenderCopy(renderer, car_sprite->texture, &car_sprite->src_pos, &car_sprite->dst_pos);
+        if(hide_menu){
+            if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
+                if(!on_finish_line){
+                    //printf("Temps dernier tour = %f\n", current_lap_timer);
+                    current_lap_timer = 0;
+                }
+                on_finish_line = true;
+            }else{
+                on_finish_line = false;
+            }
 
-        SDL_RenderCopy(renderer, text, NULL, &text_pos);
+            update_physics(map, size, player, delta_time);
+
+            if(debug)
+                render_roads_map(img, w, h, roads, size);
+            else
+                render(img, buildings, map, player, w, h, size);
+
+            SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
+            SDL_RenderCopy(renderer, main_texture, NULL, NULL);
+            
+            if(!debug){
+                SDL_RenderCopy(renderer, text, NULL, &text_pos);
+                if((player->braking && player->move_velocity >= 0) || (player->accelerating && player->move_velocity < 0))
+                    SDL_RenderCopy(renderer, car_braking_sprite->texture, &car_braking_sprite->src_pos, &car_braking_sprite->dst_pos);
+                else
+                    SDL_RenderCopy(renderer, car_sprite->texture, &car_sprite->src_pos, &car_sprite->dst_pos);
+            }
+            
+            
+        }else{
+            SDL_RenderCopy(renderer, button_play->sprite->texture, NULL, &button_play->sprite->dst_pos);
+            SDL_RenderCopy(renderer, button_quit->sprite->texture, NULL, &button_quit->sprite->dst_pos);
+        }
         SDL_RenderPresent(renderer);
 
         SDL_Delay(5);
     }
 
+    free(car_sprite);
+    free(car_braking_sprite);
+    free_button(button_play);
+    free_button(button_quit);
+    free_roads(roads, size);
     free(img);
     free_buildings(buildings, BUILDINGS_COUNT);
     free_player(player);
@@ -201,5 +233,4 @@ int main(int argc, char *argv[]){
 
     
     return 0;
-    
 }
