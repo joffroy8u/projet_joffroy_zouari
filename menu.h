@@ -7,6 +7,7 @@
 
 #include "sprite.h"
 #include "vector2.h"
+#include "game.h"
 
 typedef struct {
 
@@ -15,15 +16,19 @@ typedef struct {
     int width;
     int height;
     sprite_t* sprite;
-    bool (*on_click)(); // Fonction à exécuter quand le bouton est cliqué.
+    int (*on_click)(); // Fonction à exécuter quand le bouton est cliqué.
 
 } button_t;
 
-button_t* init_button(SDL_Renderer* renderer, int x, int y, int width, int height, char* sprite_path, bool (*on_click)());
-bool handle_button_events(button_t* button, SDL_Event event);
+button_t* init_button(SDL_Renderer* renderer, int x, int y, int width, int height, char* sprite_path, int (*on_click)());
+int handle_button_events(button_t* button, SDL_Event event, game_state_e game_state);
 bool is_mouse_over(button_t* button, int mouse_x, int mouse_y);
 void free_button(button_t* button);
-bool play();
-bool quit();
+int play();
+int settings();
+int increase_render_dst();
+int decrease_render_dst();
+int menu();
+int quit();
 
 #endif

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "game.h"
 #include "SDL_utils.h"
 #include "sprite.h"
 #include "renderer.h"
@@ -24,7 +25,9 @@ int main(int argc, char *argv[]){
     SDL_Event event;
     SDL_Renderer* renderer;
     bool end = false;
-    bool hide_menu = false;
+    game_state_e game_state = MENU;
+    int render_dst = 60;
+
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Erreur d’initialisation de la SDL: %s\n",SDL_GetError());
@@ -97,8 +100,16 @@ int main(int argc, char *argv[]){
     text_pos.x = 10;
     text_pos.y = h - text_pos.h;
 
-    button_t* button_play = init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_play.png", play);
+    // Initialisation des boutons
+    // Menu principal
+    button_t* button_play = init_button(renderer, w/2, h/2 - 120, 140, 70, "menu/button_play.png", play);
+    button_t* button_settings = init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_bg.png", settings);
     button_t* button_quit = init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_quit.png", quit);
+
+    // Menu options
+    button_t* button_increase_render_dst =  init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_bg.png", increase_render_dst);
+    button_t* button_decrease_render_dst =  init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_bg.png", decrease_render_dst);
+    button_t* button_back = init_button(renderer, w/2, h - 75, 140, 70, "menu/button_bg.png", menu);
 
     while(!end){
 
@@ -119,16 +130,28 @@ int main(int argc, char *argv[]){
         text = load_text(time_str, renderer, font, black);
         SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
 
+        //printf("%d\n", render_dst);
+
         while(SDL_PollEvent(&event) != 0){
 
             if(event.type == SDL_QUIT){
                 end = true;
+                break;
             }
-            
-            if(!hide_menu){
-                hide_menu = handle_button_events(button_play, event);
-                end = handle_button_events(button_quit, event);
-            }else{
+
+            if(game_state == MENU){
+                game_state = handle_button_events(button_play, event, game_state);
+                game_state = handle_button_events(button_settings, event, game_state);
+                end = (handle_button_events(button_quit, event, game_state) == 3);
+            }
+            else if(game_state == OPTIONS){
+                game_state = handle_button_events(button_back, event, game_state);
+                render_dst += (handle_button_events(button_increase_render_dst, event, game_state) == 1 ? 1 : 0);
+                render_dst += (handle_button_events(button_decrease_render_dst, event, game_state) == -1 ? -1 : 0);
+                if(render_dst < 30) render_dst = 30;
+                if(render_dst > 100) render_dst = 100;
+            }
+            else if(game_state == GAME){
                 if(event.type == SDL_KEYDOWN && event.key.repeat == 0){
                     switch(event.key.keysym.sym)
                     {
@@ -172,7 +195,7 @@ int main(int argc, char *argv[]){
 
         SDL_RenderClear(renderer);
 
-        if(hide_menu){
+        if(game_state == GAME){
             if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
                 if(!on_finish_line){
                     //printf("Temps dernier tour = %f\n", current_lap_timer);
@@ -188,7 +211,7 @@ int main(int argc, char *argv[]){
             if(debug)
                 render_roads_map(img, w, h, roads, size);
             else
-                render(img, buildings, map, player, w, h, size);
+                render(img, buildings, map, player, w, h, size, render_dst);
 
             SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
             SDL_RenderCopy(renderer, main_texture, NULL, NULL);
@@ -200,21 +223,30 @@ int main(int argc, char *argv[]){
                 else
                     SDL_RenderCopy(renderer, car_sprite->texture, &car_sprite->src_pos, &car_sprite->dst_pos);
             }
-            
-            
-        }else{
+        }
+        else if(game_state == MENU){
             SDL_RenderCopy(renderer, button_play->sprite->texture, NULL, &button_play->sprite->dst_pos);
+            SDL_RenderCopy(renderer, button_settings->sprite->texture, NULL, &button_settings->sprite->dst_pos);
             SDL_RenderCopy(renderer, button_quit->sprite->texture, NULL, &button_quit->sprite->dst_pos);
+        }
+        else if(game_state == OPTIONS){
+            SDL_RenderCopy(renderer, button_back->sprite->texture, NULL, &button_back->sprite->dst_pos);
+            SDL_RenderCopy(renderer, button_increase_render_dst->sprite->texture, NULL, &button_increase_render_dst->sprite->dst_pos);
+            SDL_RenderCopy(renderer, button_decrease_render_dst->sprite->texture, NULL, &button_decrease_render_dst->sprite->dst_pos);
         }
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(5);
+        SDL_Delay(2);
     }
 
     free(car_sprite);
     free(car_braking_sprite);
     free_button(button_play);
+    free_button(button_settings);
     free_button(button_quit);
+    free_button(button_back);
+    free_button(button_increase_render_dst);
+    free_button(button_decrease_render_dst);
     free_roads(roads, size);
     free(img);
     free_buildings(buildings, BUILDINGS_COUNT);

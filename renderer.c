@@ -11,7 +11,6 @@
 #define GROUND_COLOR 0x737373ff
 #define FOV 1.0467 // PI / 3
 #define MAX_BUILDING_HEIGHT 2.0
-#define RENDER_DISTANCE 60
 
 uint32_t* init_texture(int width, int height, uint32_t color){
 
@@ -56,7 +55,7 @@ void clear_texture(uint32_t* texture, int width, int height){
     }
 }
 
-void render(uint32_t* texture, building_t** buildings, char* map, player_t* player, int width, int height, int map_size){
+void render(uint32_t* texture, building_t** buildings, char* map, player_t* player, int width, int height, int map_size, int render_dst){
 
     clear_texture(texture, width, height);
 
@@ -71,7 +70,7 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
         float cos_angle_minus_cam_angle = cos(angle - (player->cam_angle));
         float current_height = 0.;
         int current_max_y = 0;
-        for (float c = 0; c < RENDER_DISTANCE; c+=lod) {
+        for (float c = 0; c < render_dst; c+=lod) {
             float x = (player->cam_position->x + c * cos_angle) * .25;
             float y = (player->cam_position->y + c * sin_angle) * .25;
 
@@ -115,9 +114,8 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
                 
             }
             
-            if(current_height > 0.){
-                if(c >= 45)
-                    lod = 0.02;
+            if(current_height > 0. || c >= 45){
+                lod = 0.02;
             }
         }
     }
