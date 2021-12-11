@@ -55,10 +55,11 @@ void clear_texture(uint32_t* texture, int width, int height){
     }
 }
 
-void render(uint32_t* texture, building_t** buildings, char* map, player_t* player, int width, int height, int map_size, int render_dst){
+void render(uint32_t* texture, building_t** buildings, obstacle_t** obstacles, char* map, player_t* player, int width, int height, int map_size, int obstacle_count, int render_dst){
 
     clear_texture(texture, width, height);
 
+    float depth_buffer[width];
     float inv_width = 1. / (float)width;
     float width_half = width >> 1;
     for (int i = 0; i < width; i++) { 
@@ -87,6 +88,10 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
 
                 int texture_width = buildings[building_id]->texture_width;
                 float dst = c * cos_angle_minus_cam_angle;
+
+                if(current_max_y == 0)
+                    depth_buffer[i] = dst;
+
                 int column_half_height = (int)((height / dst) * 2. * hit_height);
 
                 float hitx = x - floor(x+.5);
@@ -117,6 +122,33 @@ void render(uint32_t* texture, building_t** buildings, char* map, player_t* play
             if(current_height > 0. || c >= 45){
                 lod = 0.02;
             }
+        }
+    }
+
+    for(int i = 0; i < obstacle_count; i++){
+        draw_obstacle(texture, width, height, depth_buffer, obstacles[i], player);
+    }
+}
+
+void draw_obstacle(uint32_t* texture, int width, int height, float depth_buffer[width], obstacle_t* sprite, player_t* player){
+
+    float sprite_dir = atan2(sprite->position->y - player->cam_position->y, sprite->position->x - player->cam_position->x);
+    while (sprite_dir - player->cam_angle >  3.14) sprite_dir -= 2*3.14; 
+    while (sprite_dir - player->cam_angle < -3.14) sprite_dir += 2*3.14;
+
+    float sprite_dst = distance(sprite->position, player->position);
+    int sprite_size = fmin(2000, height / sprite_dst * 4);
+    int x_offset = (sprite_dir - player->cam_angle) * width / FOV + (width >> 1) - (sprite_size >> 1);
+    int y_offset = (height >> 1) - (sprite_size >> 1) - (height * 0.4);
+
+    for (int i = 0; i < sprite_size; i++) {
+        if (x_offset + i < 0 || x_offset + i >= width) continue;
+        if (depth_buffer[x_offset + i] < sprite_dst) continue;
+
+        for (int j = 0; j < sprite_size; j++) {
+            if (y_offset + j < 0 || y_offset + j >= height) continue;
+
+            texture[width + x_offset + i + (y_offset+j) * width] = 0x00000000;
         }
     }
 }

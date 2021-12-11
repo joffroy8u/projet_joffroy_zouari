@@ -17,8 +17,8 @@ typedef struct {
 
 } obstacle_t;
 
-obstacle_t* init_obstacle(vector2_t* position, sprite_t* sprite);
-void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle);
+obstacle_t* init_obstacle(vector2_t* position, sprite_t* sprite, int vertex_count);
+void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float dt);
 bool reached_next_vertex(road_vertex_t** roads, obstacle_t* obstacle);
 void free_obstacle(obstacle_t* obstacle);
 

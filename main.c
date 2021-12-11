@@ -16,6 +16,7 @@
 #include "building.h"
 #include "roads.h"
 #include "menu.h"
+#include "obstacle.h"
 
 int main(int argc, char *argv[]){
 
@@ -110,6 +111,11 @@ int main(int argc, char *argv[]){
     button_t* button_increase_render_dst =  init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_bg.png", increase_render_dst);
     button_t* button_decrease_render_dst =  init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_bg.png", decrease_render_dst);
     button_t* button_back = init_button(renderer, w/2, h - 75, 140, 70, "menu/button_bg.png", menu);
+
+    //Initialisation des obstacles
+    int obstacle_count = 1;
+    obstacle_t** obstacles[obstacle_count];
+    obstacles[0] = init_obstacle(init_vector2(8, 20), car_sprite, size*size);
 
     while(!end){
 
@@ -207,11 +213,14 @@ int main(int argc, char *argv[]){
             }
 
             update_physics(map, size, player, delta_time);
+            for(int i = 0; i < obstacle_count; i++){
+                move_towards_next_vertex(roads, obstacles[i], delta_time);
+            }
 
             if(debug)
                 render_roads_map(img, w, h, roads, size);
             else
-                render(img, buildings, map, player, w, h, size, render_dst);
+                render(img, buildings, obstacles, map, player, w, h, size, obstacle_count, render_dst);
 
             SDL_UpdateTexture(main_texture, NULL, (void*)img, w*4);
             SDL_RenderCopy(renderer, main_texture, NULL, NULL);
@@ -239,6 +248,9 @@ int main(int argc, char *argv[]){
         SDL_Delay(2);
     }
 
+    for(int i = 0; i < obstacle_count; i++){
+        free_obstacle(obstacles[i]);
+    }
     free(car_sprite);
     free(car_braking_sprite);
     free_button(button_play);

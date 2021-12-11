@@ -10,7 +10,9 @@ obstacle_t* init_obstacle(vector2_t* position, sprite_t* sprite, int vertex_coun
     obstacle_t* obstacle = (obstacle_t*)malloc(sizeof(obstacle_t));
     obstacle->position = position;
     obstacle->sprite = sprite;
-    obstacle->next_vertex = 0;
+    obstacle->next_vertex = 34;
+
+    return obstacle;
 }
 
 void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float dt){
@@ -21,6 +23,11 @@ void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float
 
     obstacle->position->x += move_x;
     obstacle->position->y += move_y;
+
+    if(reached_next_vertex(roads, obstacle)){
+        obstacle->next_vertex = roads[obstacle->next_vertex]->edges[0];
+        //printf("Next vertex = %d, %f,%f\n", obstacle->next_vertex, roads[obstacle->next_vertex]->position->x, roads[obstacle->next_vertex]->position->y);
+    }
 }
 
 bool reached_next_vertex(road_vertex_t** roads, obstacle_t* obstacle){
