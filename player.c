@@ -111,6 +111,12 @@ bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y){
     return map[index] == '=';
 }
 
+bool check_collision_obstacle(player_t* player, obstacle_t* obstacle){
+    
+    return fabsf(player->position->x - obstacle->position->x) <= (WHEEL_SPACING + obstacle->length) / 2
+        && fabsf(player->position->y - obstacle->position->y) <= (CAR_WIDTH + obstacle->width) / 2;
+}
+
 void free_player(player_t* player){
 
     free_vector2(player->position);

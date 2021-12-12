@@ -114,8 +114,8 @@ int main(int argc, char *argv[]){
 
     //Initialisation des obstacles
     int obstacle_count = 1;
-    obstacle_t** obstacles[obstacle_count];
-    obstacles[0] = init_obstacle(init_vector2(8, 20), car_sprite, size*size);
+    obstacle_t* obstacles[obstacle_count];
+    obstacles[0] = init_obstacle(init_vector2(8, 20), "car.png", size*size);
 
     while(!end){
 
@@ -215,6 +215,9 @@ int main(int argc, char *argv[]){
             update_physics(map, size, player, delta_time);
             for(int i = 0; i < obstacle_count; i++){
                 move_towards_next_vertex(roads, obstacles[i], delta_time);
+                if(check_collision_obstacle(player, obstacles[i])){
+                    //printf("collision\n");
+                }
             }
 
             if(debug)

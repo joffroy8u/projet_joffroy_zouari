@@ -5,12 +5,14 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "SDL_utils.h"
 #include "renderer.h"
 
 #define SKY_COLOR 0xbce7ffff
 #define GROUND_COLOR 0x737373ff
 #define FOV 1.0467 // PI / 3
 #define MAX_BUILDING_HEIGHT 2.0
+#define OBSTACLE_TEXTURE_SIZE 512
 
 uint32_t* init_texture(int width, int height, uint32_t color){
 
@@ -145,10 +147,15 @@ void draw_obstacle(uint32_t* texture, int width, int height, float depth_buffer[
         if (x_offset + i < 0 || x_offset + i >= width) continue;
         if (depth_buffer[x_offset + i] < sprite_dst) continue;
 
+        depth_buffer[x_offset + i] = sprite_dst;
         for (int j = 0; j < sprite_size; j++) {
             if (y_offset + j < 0 || y_offset + j >= height) continue;
 
-            texture[width + x_offset + i + (y_offset+j) * width] = 0x00000000;
+            uint32_t color = sprite->textures[0][i * OBSTACLE_TEXTURE_SIZE / sprite_size + (j * OBSTACLE_TEXTURE_SIZE / sprite_size) * OBSTACLE_TEXTURE_SIZE];
+            uint8_t r,g,b,a;
+            read_color(&color, &r, &g, &b, &a);
+            if(a > 4)
+                texture[width + x_offset + i + (y_offset+j) * width] = color;
         }
     }
 }

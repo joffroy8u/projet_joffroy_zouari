@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "vector2.h"
+#include "obstacle.h"
 
 #define ACCELERATION_RATE 0.06
 #define BRAKING_FORCE 0.15
@@ -36,6 +37,7 @@ player_t* init_player(vector2_t* position);
 void update_physics(char* map, int map_size, player_t* player, float dt);
 bool check_collision_wall(char* map, int map_size, float pos_x, float pos_y);
 bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y);
+bool check_collision_obstacle(player_t* player, obstacle_t* obstacle);
 void free_player(player_t* player);
 
 #endif

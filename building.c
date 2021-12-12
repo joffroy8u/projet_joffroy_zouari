@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "SDL_utils.h"
 #include "building.h"
@@ -52,15 +53,15 @@ building_t* load_building(char* file_name){
 
 uint32_t* load_building_texture(char* file_name){
 
-    SDL_Surface* bmpSurface = SDL_LoadBMP(file_name);
-    SDL_Surface* surface = SDL_ConvertSurfaceFormat(bmpSurface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_FreeSurface(bmpSurface);
+    SDL_Surface* bmp_surface = SDL_LoadBMP(file_name);
+    SDL_Surface* surface = SDL_ConvertSurfaceFormat(bmp_surface, SDL_PIXELFORMAT_RGBA8888, 0);
+    SDL_FreeSurface(bmp_surface);
     
     int tex_w = surface->w;
     int tex_h = surface->h;
 
     uint32_t* img = (uint32_t*)malloc(sizeof(uint32_t) * tex_w * tex_h);
-
+    
     for(int i = 0; i < tex_w; i++){
         for(int j = 0; j < tex_h; j++){
             uint8_t r = ((uint8_t*)(surface->pixels))[(i+j*tex_w)*4+3];
