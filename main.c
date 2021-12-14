@@ -125,7 +125,7 @@ int main(int argc, char *argv[]){
     button_t* button_back = init_button(renderer, w/2, h - 75, 140, 70, "menu/button_back.png", menu);
 
     //Initialisation des obstacles
-    int obstacle_count = 2;
+    int obstacle_count = 3;
     obstacle_t* obstacles[obstacle_count];
     char** sprite_names = (char**)malloc(sizeof(char*) * 12);
     for(int i = 0; i < 12; i++){
@@ -134,12 +134,15 @@ int main(int argc, char *argv[]){
         sprite_names[i] = (char*)malloc(sizeof(char) * 32);
         strcpy(sprite_names[i], name);
     }
-    obstacles[0] = init_obstacle(init_vector2(8, 20), sprite_names, 12, size*size);
+    obstacles[1] = init_obstacle(init_vector2(8, 36), sprite_names, 12, size);
+    obstacles[2] = init_obstacle(init_vector2(4, 36), sprite_names, 12, size);
 
     free(sprite_names);
     sprite_names = (char**)malloc(sizeof(char*) * 1);
     sprite_names[0] = "finish_line.png";
-    obstacles[1] = init_obstacle(init_vector2(finish_x,finish_y), sprite_names, 1, size*size);
+    obstacles[0] = init_obstacle(init_vector2(finish_x,finish_y), sprite_names, 1, size*size);
+    
+    float best_time = 1000;
 
     while(!end){
 
@@ -234,6 +237,9 @@ int main(int argc, char *argv[]){
             if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
                 if(!on_finish_line){
                     printf("Temps dernier tour = %f\n", current_lap_timer);
+                    if(current_lap_timer < best_time){
+                        //save_score(current_lap_timer);
+                    }
                     current_lap_timer = 0;
                 }
                 on_finish_line = true;
@@ -242,10 +248,11 @@ int main(int argc, char *argv[]){
             }
 
             update_physics(map, size, player, delta_time);
-            for(int i = 0; i < obstacle_count-1; i++){
+            for(int i = 1; i < obstacle_count; i++){
                 move_towards_next_vertex(roads, obstacles[i], delta_time);
                 if(check_collision_obstacle(player, obstacles[i])){
-                    //printf("collision\n");
+                    player->move_velocity = 0;
+                    player->accelerating = false;
                 }
             }
 

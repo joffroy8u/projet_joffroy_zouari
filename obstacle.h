@@ -22,7 +22,7 @@ typedef struct {
 
 } obstacle_t;
 
-obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int vertex_count);
+obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int map_size);
 uint32_t* load_obstacle_texture(char* file_name);
 void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float dt);
 bool reached_next_vertex(road_vertex_t** roads, obstacle_t* obstacle);

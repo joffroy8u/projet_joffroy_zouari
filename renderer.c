@@ -136,7 +136,7 @@ void render(uint32_t* texture, building_t** buildings, obstacle_t** obstacles, c
         }
     }
 
-    for(int i = 1; i < obstacle_count; i++){
+    for(int i = 0; i < obstacle_count; i++){
         draw_obstacle(texture, width, height, depth_buffer, obstacles[i], player);
     }
 }
@@ -148,11 +148,12 @@ void draw_obstacle(uint32_t* texture, int width, int height, float depth_buffer[
     while (sprite_dir - player->cam_angle < -3.14) sprite_dir += 2*3.14;
 
     float sprite_dst = distance(sprite->position, player->position);
-    int sprite_size = fmin(2000, height / sprite_dst * 4);
+    float height_scale = sprite->sprite_count == 0 ? 4 : 2.5;
+    int sprite_size = fmin(sprite->sprite_count == 0 ? 2000 : 400, height / sprite_dst * height_scale);
     int x_offset = (sprite_dir - player->cam_angle) * width / FOV + (width >> 1) - (sprite_size >> 1);
-    int y_offset = (height >> 1) - (sprite_size >> 1) - (height * 0.4);
+    int y_offset = (height >> 1) - (sprite_size / (2*height_scale)) - (height * 0.4);
 
-    float theta = -(sprite->direction - sprite_dir) * 180. / 3.14;
+    float theta = -(sprite->direction - player->cam_angle) * 180. / 3.14;
     if(theta < 0) theta = 360 + theta;
     int sprite_index = theta / 30;
 

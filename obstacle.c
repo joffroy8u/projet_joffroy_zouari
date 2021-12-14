@@ -8,7 +8,7 @@
 #include "SDL_utils.h"
 #include "obstacle.h"
 
-obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int vertex_count){
+obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int map_size){
 
     obstacle_t* obstacle = (obstacle_t*)malloc(sizeof(obstacle_t));
     obstacle->position = position;
@@ -20,7 +20,8 @@ obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_co
         obstacle->textures[i] = load_obstacle_texture(sprite_name[i]);
     }
     obstacle->sprite_count = sprite_count;
-    obstacle->next_vertex = 34;
+    int vertex = (position->x/4) + (position->y/4) * map_size;
+    obstacle->next_vertex = vertex;
 
     srand(time(NULL));
 
@@ -71,7 +72,7 @@ void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float
             r = 0;
 
         obstacle->next_vertex = roads[obstacle->next_vertex]->edges[0];
-        //printf("Next vertex = %d, %f,%f\n", obstacle->next_vertex, roads[obstacle->next_vertex]->position->x, roads[obstacle->next_vertex]->position->y);
+        printf("Next vertex = %d, %f,%f\n", obstacle->next_vertex, roads[obstacle->next_vertex]->position->x, roads[obstacle->next_vertex]->position->y);
     }
 }
 
