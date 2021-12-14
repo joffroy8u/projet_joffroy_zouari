@@ -12,7 +12,7 @@
 #define GROUND_COLOR 0x737373ff
 #define FOV 1.0467 // PI / 3
 #define MAX_BUILDING_HEIGHT 2.0
-#define OBSTACLE_TEXTURE_SIZE 512
+#define OBSTACLE_TEXTURE_SIZE 128
 
 uint32_t* init_texture(int width, int height, uint32_t color){
 
@@ -42,6 +42,7 @@ void draw_column(uint32_t* texture, int width, int height, building_t* building,
         else{
             int pix_x = tex_coord;
             int pix_y = ((y - min_y) * building->texture_height) / column_height;
+
             texture[x + y * width] = building->texture[pix_x + pix_y * building->texture_width];
         }
     }
@@ -84,13 +85,15 @@ void render(uint32_t* texture, building_t** buildings, obstacle_t** obstacles, c
             if (map[map_index] >= '0' && map[map_index] <= '9'){
                 int building_id = map[map_index] - '0';
                 float hit_height = buildings[building_id]->building_height;
+                
                 if(hit_height <= current_height) continue;
 
                 current_height = hit_height;
+                
 
                 int texture_width = buildings[building_id]->texture_width;
                 float dst = c * cos_angle_minus_cam_angle;
-
+                
                 if(current_max_y == 0)
                     depth_buffer[i] = dst;
 
@@ -115,6 +118,12 @@ void render(uint32_t* texture, building_t** buildings, obstacle_t** obstacles, c
                 draw_column(texture, width, height, buildings[building_id], tex_coord_x, i, min_y, max_y, max_y_ground, hit_height);
                 
                 current_max_y = min_y;
+                
+                if(building_id == 3){
+                    current_height = 0;
+                    lod = 0.1;
+                    current_max_y = 0;
+                }
 
                 if(hit_height >= MAX_BUILDING_HEIGHT)
                     break;
@@ -127,7 +136,7 @@ void render(uint32_t* texture, building_t** buildings, obstacle_t** obstacles, c
         }
     }
 
-    for(int i = 0; i < obstacle_count; i++){
+    for(int i = 1; i < obstacle_count; i++){
         draw_obstacle(texture, width, height, depth_buffer, obstacles[i], player);
     }
 }
@@ -143,6 +152,12 @@ void draw_obstacle(uint32_t* texture, int width, int height, float depth_buffer[
     int x_offset = (sprite_dir - player->cam_angle) * width / FOV + (width >> 1) - (sprite_size >> 1);
     int y_offset = (height >> 1) - (sprite_size >> 1) - (height * 0.4);
 
+    float theta = -(sprite->direction - sprite_dir) * 180. / 3.14;
+    if(theta < 0) theta = 360 + theta;
+    int sprite_index = theta / 30;
+
+    if(sprite->sprite_count == 1) sprite_index = 0;
+
     for (int i = 0; i < sprite_size; i++) {
         if (x_offset + i < 0 || x_offset + i >= width) continue;
         if (depth_buffer[x_offset + i] < sprite_dst) continue;
@@ -151,10 +166,10 @@ void draw_obstacle(uint32_t* texture, int width, int height, float depth_buffer[
         for (int j = 0; j < sprite_size; j++) {
             if (y_offset + j < 0 || y_offset + j >= height) continue;
 
-            uint32_t color = sprite->textures[0][i * OBSTACLE_TEXTURE_SIZE / sprite_size + (j * OBSTACLE_TEXTURE_SIZE / sprite_size) * OBSTACLE_TEXTURE_SIZE];
+            uint32_t color = sprite->textures[sprite_index][i * OBSTACLE_TEXTURE_SIZE / sprite_size + (j * OBSTACLE_TEXTURE_SIZE / sprite_size) * OBSTACLE_TEXTURE_SIZE];
             uint8_t r,g,b,a;
             read_color(&color, &r, &g, &b, &a);
-            if(a > 4)
+            if(a > 4 || r != 0 || g != 0 || b != 0)
                 texture[width + x_offset + i + (y_offset+j) * width] = color;
         }
     }

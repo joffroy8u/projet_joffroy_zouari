@@ -53,9 +53,7 @@ building_t* load_building(char* file_name){
 
 uint32_t* load_building_texture(char* file_name){
 
-    SDL_Surface* bmp_surface = SDL_LoadBMP(file_name);
-    SDL_Surface* surface = SDL_ConvertSurfaceFormat(bmp_surface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_FreeSurface(bmp_surface);
+    SDL_Surface* surface = load_png_surface(file_name);
     
     int tex_w = surface->w;
     int tex_h = surface->h;

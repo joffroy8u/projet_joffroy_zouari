@@ -102,7 +102,7 @@ void update_physics(char* map, int map_size, player_t* player, float dt){
 bool check_collision_wall(char* map, int map_size, float pos_x, float pos_y){
 
     int index = (int)(pos_x * .25) + (int)(pos_y * .25) * map_size;
-    return map[index] != ' ' && map[index] != '=';
+    return map[index] != ' ' && map[index] != '=' && map[index] != '3';
 }
 
 bool check_collision_finish(char* map, int map_size, float pos_x, float pos_y){

@@ -62,11 +62,11 @@ int settings(){
 }
 
 int increase_render_dst(){
-    return 1;
+    return 5;
 }
 
 int decrease_render_dst(){
-    return -1;
+    return -5;
 }
 
 int menu(){

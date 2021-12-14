@@ -16,18 +16,23 @@ road_vertex_t* init_road_tile(vector2_t* position, int edges[2], int bitmask){
     return road_tile;
 }
 
-road_vertex_t** build_roads(char* map, int map_size){
+road_vertex_t** build_roads(char* map, int map_size, float* finish_x, float* finish_y){
     
     int n = map_size * map_size;
     road_vertex_t** vertices = (road_vertex_t**)malloc(sizeof(road_vertex_t*) * n);
     for(int i = 0; i < n; i++){
         vector2_t* position = init_vector2((i % map_size) * 4 + 2, (i / map_size) * 4 + 2);
         int edges[2] = {-1, -1};
-        if(map[i] != ' '){ 
+        if(map[i] != ' ' && map[i] != '='){ 
             vertices[i] = init_road_tile(position, edges, -1);
             continue;
         }
         
+        if(map[i] == '='){
+            *finish_x = position->x;
+            *finish_y = position->y;
+        }
+
         int bitmask = get_bitmask(map, map_size, i);
         int neighbor = -1;
         // Arete vers le Nord

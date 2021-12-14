@@ -79,13 +79,16 @@ int main(int argc, char *argv[]){
     sprite_t* car_braking_sprite = init_sprite(renderer, "car_braking.png", 0, 0);
 
     int size = 0;
+    
     char* map = load_map("map.txt", &size);
 
-    road_vertex_t** roads = build_roads(map, size);
+    float finish_x, finish_y;
+    road_vertex_t** roads = build_roads(map, size, &finish_x, &finish_y);
+    
 
     int last_ticks = 0;
 
-    player_t* player = init_player(init_vector2(6,8));
+    player_t* player = init_player(init_vector2(finish_x - 1,finish_y+1));
 
     // Initialisation chronometre
     float total_timer = 0;
@@ -93,6 +96,7 @@ int main(int argc, char *argv[]){
     bool on_finish_line = false;
 
     SDL_Color black = {0,0,0,255};
+    SDL_Color white = {255,255,255,255};
     SDL_Texture* text;
     SDL_Rect text_pos;
     char time_str[7] = "000.000";
@@ -101,41 +105,66 @@ int main(int argc, char *argv[]){
     text_pos.x = 10;
     text_pos.y = h - text_pos.h;
 
+    SDL_Texture* text_render_dst;
+    SDL_Rect text_render_dst_pos;
+    char render_dst_str[3] = "000";
+    text_render_dst = load_text(render_dst_str, renderer, font, white);
+    SDL_QueryTexture(text, NULL, NULL, &text_render_dst_pos.w, &text_render_dst_pos.h);
+    text_render_dst_pos.x = w/2 - 10;
+    text_render_dst_pos.y = h/2 - text_render_dst_pos.h/2;
+
     // Initialisation des boutons
     // Menu principal
     button_t* button_play = init_button(renderer, w/2, h/2 - 120, 140, 70, "menu/button_play.png", play);
-    button_t* button_settings = init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_bg.png", settings);
+    button_t* button_settings = init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_options.png", settings);
     button_t* button_quit = init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_quit.png", quit);
 
     // Menu options
-    button_t* button_increase_render_dst =  init_button(renderer, w/2, h/2 - 40, 140, 70, "menu/button_bg.png", increase_render_dst);
-    button_t* button_decrease_render_dst =  init_button(renderer, w/2, h/2 + 40, 140, 70, "menu/button_bg.png", decrease_render_dst);
-    button_t* button_back = init_button(renderer, w/2, h - 75, 140, 70, "menu/button_bg.png", menu);
+    button_t* button_increase_render_dst =  init_button(renderer, w/2 + 70, h/2, 70, 70, "menu/button_right.png", increase_render_dst);
+    button_t* button_decrease_render_dst =  init_button(renderer, w/2 - 70, h/2, 70, 70, "menu/button_left.png", decrease_render_dst);
+    button_t* button_back = init_button(renderer, w/2, h - 75, 140, 70, "menu/button_back.png", menu);
 
     //Initialisation des obstacles
-    int obstacle_count = 1;
+    int obstacle_count = 2;
     obstacle_t* obstacles[obstacle_count];
-    obstacles[0] = init_obstacle(init_vector2(8, 20), "car.png", size*size);
+    char** sprite_names = (char**)malloc(sizeof(char*) * 12);
+    for(int i = 0; i < 12; i++){
+        char name[32] = "obstacle/car_obstacle_XXX.png";
+        sprintf(name, "obstacle/car_obstacle_%d.png", i * 30);
+        sprite_names[i] = (char*)malloc(sizeof(char) * 32);
+        strcpy(sprite_names[i], name);
+    }
+    obstacles[0] = init_obstacle(init_vector2(8, 20), sprite_names, 12, size*size);
+
+    free(sprite_names);
+    sprite_names = (char**)malloc(sizeof(char*) * 1);
+    sprite_names[0] = "finish_line.png";
+    obstacles[1] = init_obstacle(init_vector2(finish_x,finish_y), sprite_names, 1, size*size);
 
     while(!end){
 
         SDL_DestroyTexture(text);
 
-        sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
+        //sprintf(time_str, "%d", (int)(1000/(SDL_GetTicks() - last_ticks)));
+        sprintf(render_dst_str, "%d", render_dst);
 
         float delta_time = (SDL_GetTicks() - last_ticks) / 1000.;
         last_ticks = SDL_GetTicks();
         if(delta_time == 0)
             delta_time = 1.;
 
-        total_timer += delta_time;
-        current_lap_timer += delta_time;
+        if(game_state == GAME){
+            total_timer += delta_time;
+            current_lap_timer += delta_time;
+        }
 
         
-        //sprintf(time_str, "%d.%d", (int)total_timer, (int)((total_timer - (int)total_timer) * 1000));
+        sprintf(time_str, "%d.%d", (int)current_lap_timer, (int)((current_lap_timer - (int)current_lap_timer) * 1000));
         text = load_text(time_str, renderer, font, black);
         SDL_QueryTexture(text, NULL, NULL, &text_pos.w, &text_pos.h);
 
+        text_render_dst = load_text(render_dst_str, renderer, font, white);
+        SDL_QueryTexture(text_render_dst, NULL, NULL, &text_render_dst_pos.w, &text_render_dst_pos.h);
         //printf("%d\n", render_dst);
 
         while(SDL_PollEvent(&event) != 0){
@@ -152,8 +181,8 @@ int main(int argc, char *argv[]){
             }
             else if(game_state == OPTIONS){
                 game_state = handle_button_events(button_back, event, game_state);
-                render_dst += (handle_button_events(button_increase_render_dst, event, game_state) == 1 ? 1 : 0);
-                render_dst += (handle_button_events(button_decrease_render_dst, event, game_state) == -1 ? -1 : 0);
+                render_dst += (handle_button_events(button_increase_render_dst, event, game_state) == 5 ? 5 : 0);
+                render_dst += (handle_button_events(button_decrease_render_dst, event, game_state) == -5 ? -5 : 0);
                 if(render_dst < 30) render_dst = 30;
                 if(render_dst > 100) render_dst = 100;
             }
@@ -204,7 +233,7 @@ int main(int argc, char *argv[]){
         if(game_state == GAME){
             if(check_collision_finish(map, size, player->front_wheel_position->x, player->front_wheel_position->y) && player->move_velocity > 0){
                 if(!on_finish_line){
-                    //printf("Temps dernier tour = %f\n", current_lap_timer);
+                    printf("Temps dernier tour = %f\n", current_lap_timer);
                     current_lap_timer = 0;
                 }
                 on_finish_line = true;
@@ -213,7 +242,7 @@ int main(int argc, char *argv[]){
             }
 
             update_physics(map, size, player, delta_time);
-            for(int i = 0; i < obstacle_count; i++){
+            for(int i = 0; i < obstacle_count-1; i++){
                 move_towards_next_vertex(roads, obstacles[i], delta_time);
                 if(check_collision_obstacle(player, obstacles[i])){
                     //printf("collision\n");
@@ -245,12 +274,17 @@ int main(int argc, char *argv[]){
             SDL_RenderCopy(renderer, button_back->sprite->texture, NULL, &button_back->sprite->dst_pos);
             SDL_RenderCopy(renderer, button_increase_render_dst->sprite->texture, NULL, &button_increase_render_dst->sprite->dst_pos);
             SDL_RenderCopy(renderer, button_decrease_render_dst->sprite->texture, NULL, &button_decrease_render_dst->sprite->dst_pos);
+            SDL_RenderCopy(renderer, text_render_dst, NULL, &text_render_dst_pos);
         }
         SDL_RenderPresent(renderer);
 
         SDL_Delay(2);
     }
 
+    for(int i = 0; i < 12; i++){
+        free(sprite_names[i]);
+    }
+    free(sprite_names);
     for(int i = 0; i < obstacle_count; i++){
         free_obstacle(obstacles[i]);
     }
@@ -273,6 +307,8 @@ int main(int argc, char *argv[]){
 
     if(text != NULL)
         SDL_DestroyTexture(text);
+    if(text_render_dst != NULL)
+        SDL_DestroyTexture(text_render_dst);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

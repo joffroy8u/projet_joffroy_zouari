@@ -1,4 +1,4 @@
-building_0.bmp
+building_0.png
 64
 128
 2.0

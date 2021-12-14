@@ -1,4 +1,4 @@
-building_1.bmp
+building_1.png
 64
 96
 1.5

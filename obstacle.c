@@ -8,15 +8,18 @@
 #include "SDL_utils.h"
 #include "obstacle.h"
 
-obstacle_t* init_obstacle(vector2_t* position, char* sprite_name, int vertex_count){
+obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int vertex_count){
 
     obstacle_t* obstacle = (obstacle_t*)malloc(sizeof(obstacle_t));
     obstacle->position = position;
     obstacle->direction = 0;
     obstacle->length = 2.5;
     obstacle->width = 1.5;
-    obstacle->textures = (uint32_t**)malloc(sizeof(uint32_t*));
-    obstacle->textures[0] = load_obstacle_texture(sprite_name);
+    obstacle->textures = (uint32_t**)malloc(sizeof(uint32_t*) * sprite_count);
+    for(int i = 0; i < sprite_count; i++){
+        obstacle->textures[i] = load_obstacle_texture(sprite_name[i]);
+    }
+    obstacle->sprite_count = sprite_count;
     obstacle->next_vertex = 34;
 
     srand(time(NULL));
@@ -67,7 +70,7 @@ void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float
         if(roads[obstacle->next_vertex]->edges[1] == -1)
             r = 0;
 
-        obstacle->next_vertex = roads[obstacle->next_vertex]->edges[r];
+        obstacle->next_vertex = roads[obstacle->next_vertex]->edges[0];
         //printf("Next vertex = %d, %f,%f\n", obstacle->next_vertex, roads[obstacle->next_vertex]->position->x, roads[obstacle->next_vertex]->position->y);
     }
 }
@@ -80,7 +83,9 @@ bool reached_next_vertex(road_vertex_t** roads, obstacle_t* obstacle){
 
 void free_obstacle(obstacle_t* obstacle){
 
-    free(obstacle->textures[0]);
+    for(int i = 0; i < obstacle->sprite_count; i++){
+        free(obstacle->textures[0]);
+    }
     free(obstacle->textures);
     free_vector2(obstacle->position);
     free(obstacle);

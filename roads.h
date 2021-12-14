@@ -17,7 +17,7 @@ typedef struct {
 } road_vertex_t;
 
 road_vertex_t* init_road_tile(vector2_t* position, int edges[2], int bitmask);
-road_vertex_t** build_roads(char* map, int map_size);
+road_vertex_t** build_roads(char* map, int map_size, float* finish_x, float* finish_y);
 int get_bitmask(char* map, int map_size, int index);
 int get_diag_bitmask(char* map, int map_size, int index);
 bool get_neighbor(int map_size, int index, direction_t dir, int* neighbor);
