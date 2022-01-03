@@ -6,6 +6,49 @@
 
 #include "SDL_utils.h"
 
+int init_SDL(SDL_Renderer** renderer, SDL_Window** window, int width, int height){
+
+    // Initialisation SDL
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("Erreur d’initialisation de la SDL: %s\n",SDL_GetError());
+        SDL_Quit();
+        return EXIT_FAILURE;
+    } 
+
+    // Initialisation SDL_Image
+    if(IMG_Init(IMG_INIT_PNG) < 0)
+    {
+        printf("Erreur d’initialisation de SDL_image: %s\n", IMG_GetError() );
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }    
+
+    // Créer la fenêtre
+    *window = SDL_CreateWindow("Jeu", SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_RESIZABLE);
+    if(*window == NULL)
+    {
+        printf("Erreur lors de la creation de la fenetre: %s\n",SDL_GetError());
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+
+    // Création du renderer
+    *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED);
+
+    // Initialisation TTF
+    TTF_Init();
+}
+
+void init_font(TTF_Font** font, char* font_name, int size){
+
+    *font = TTF_OpenFont(font_name, size);
+    if(!(*font)){
+        printf("Erreur lors du chargement de la police: %s\n", TTF_GetError());
+    }
+}
+
 SDL_Texture* load_text(const char* message, SDL_Renderer* renderer, TTF_Font *font, SDL_Color color)
 {
     SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);

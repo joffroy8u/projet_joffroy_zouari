@@ -18,6 +18,7 @@ struct building_s {
 
 typedef struct building_s building_t;
 
+void load_buildings(building_t** buildings);
 building_t* load_building(char* file_name);
 uint32_t* load_building_texture(char* file_name);
 void free_building(building_t* building);

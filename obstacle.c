@@ -3,31 +3,34 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <math.h>
-#include <time.h>
 
 #include "SDL_utils.h"
 #include "obstacle.h"
 
-obstacle_t* init_obstacle(vector2_t* position, char** sprite_name, int sprite_count, int vertex_count){
+// Initialisation d'un obstacle
+obstacle_t* init_obstacle(vector2_t* position, char* sprite_name, int vertex, bool moving){
 
     obstacle_t* obstacle = (obstacle_t*)malloc(sizeof(obstacle_t));
     obstacle->position = position;
     obstacle->direction = 0;
-    obstacle->length = 2.5;
-    obstacle->width = 1.5;
-    obstacle->textures = (uint32_t**)malloc(sizeof(uint32_t*) * sprite_count);
-    for(int i = 0; i < sprite_count; i++){
-        obstacle->textures[i] = load_obstacle_texture(sprite_name[i]);
-    }
-    obstacle->sprite_count = sprite_count;
-    obstacle->next_vertex = 34;
+    obstacle->length = OBS_CAR_LENGTH;
+    obstacle->width = OBS_CAR_WIDTH;
+    obstacle->texture = load_obstacle_texture(sprite_name, &(obstacle->spritesheet_width), &(obstacle->spritesheet_height));
+    obstacle->next_vertex = vertex;
+    obstacle->height_scale = 4;
+    obstacle->moving = moving;
 
-    srand(time(NULL));
+    obstacle->corners = (vector2_t**)malloc(sizeof(vector2_t*) * 4);
+    for(int i = 0; i < 4; i++){
+        obstacle->corners[i] = init_vector2(0,0);
+    }
+    update_corners(obstacle);
 
     return obstacle;
 }
 
-uint32_t* load_obstacle_texture(char* file_name){
+// Chargement du sprite d'un obstacle
+uint32_t* load_obstacle_texture(char* file_name, int* width, int* height){
 
     SDL_Surface* surface = load_png_surface(file_name);
     
@@ -48,45 +51,87 @@ uint32_t* load_obstacle_texture(char* file_name){
             
         }
     }
-    
     SDL_FreeSurface(surface);
 
+    *width = tex_w / OBS_SPRITE_SIZE;
+    *height = tex_h / OBS_SPRITE_SIZE;
     return img;
 }
 
+// Mise à jour des obstacles
+void update_obstacles(obstacle_t** obstacles, int obstacle_count, road_vertex_t** roads, float delta_time){
+
+    for(int i = 0; i < obstacle_count; i++){
+        if(obstacles[i]->moving){
+            move_towards_next_vertex(roads, obstacles[i], delta_time);
+        }
+    }
+}
+
+// Mise à jour des coins de l'obstacle
+void update_corners(obstacle_t* obstacle){
+
+    float dir = obstacle->direction;
+    float center_x = obstacle->position->x;
+    float center_y = obstacle->position->y;
+    float half_width = obstacle->width * 0.5;
+    float half_length = obstacle->length * 0.5;
+
+    obstacle->corners[0]->x = center_x + (half_length * cos(dir) - half_width * sin(dir));
+    obstacle->corners[0]->y = center_y + (half_length * sin(dir) + half_width * cos(dir));
+
+    obstacle->corners[1]->x = center_x + (half_length * cos(dir) + half_width * sin(dir));
+    obstacle->corners[1]->y = center_y + (half_length * sin(dir) - half_width * cos(dir));
+
+    obstacle->corners[2]->x = center_x - (half_length * cos(dir) - half_width * sin(dir));
+    obstacle->corners[2]->y = center_y - (half_length * sin(dir) + half_width * cos(dir));
+
+    obstacle->corners[3]->x = center_x - (half_length * cos(dir) + half_width * sin(dir));
+    obstacle->corners[3]->y = center_y - (half_length * sin(dir) - half_width * cos(dir));
+}
+
+// Déplacement vers la position du prochain sommet du graphe
 void move_towards_next_vertex(road_vertex_t** roads, obstacle_t* obstacle, float dt){
 
     vector2_t* next_position = roads[obstacle->next_vertex]->position;
-    float move_x = (next_position->x - obstacle->position->x) / fabs(next_position->x - obstacle->position->x) * SPEED * dt;
-    float move_y = (next_position->y - obstacle->position->y) / fabs(next_position->y - obstacle->position->y) * SPEED * dt;
+
+    float dir = atan2(obstacle->position->y - next_position->y, obstacle->position->x - next_position->x);
+
+    obstacle->direction = dir;
+
+    float move_x = -cos(dir) * OBS_CAR_SPEED * dt;
+    float move_y = -sin(dir) * OBS_CAR_SPEED * dt;
 
     obstacle->position->x += move_x;
     obstacle->position->y += move_y;
-    obstacle->direction = atan2(obstacle->position->y - next_position->y, obstacle->position->x - next_position->x);
+
+    update_corners(obstacle);
     
+    // Si le sommet est atteint, on en choisit un nouveau
     if(reached_next_vertex(roads, obstacle)){
         int r = rand() % 2;
-        
-        if(roads[obstacle->next_vertex]->edges[1] == -1)
+        if(roads[obstacle->next_vertex]->edges[1] == -1){
             r = 0;
-
-        obstacle->next_vertex = roads[obstacle->next_vertex]->edges[0];
-        //printf("Next vertex = %d, %f,%f\n", obstacle->next_vertex, roads[obstacle->next_vertex]->position->x, roads[obstacle->next_vertex]->position->y);
+        }
+        obstacle->next_vertex = roads[obstacle->next_vertex]->edges[r];
     }
 }
 
+// Vérifie si le sommet est atteint
 bool reached_next_vertex(road_vertex_t** roads, obstacle_t* obstacle){
 
     vector2_t* next_position = roads[obstacle->next_vertex]->position;
-    return distance(obstacle->position, next_position) < 0.1;
+    return distance(obstacle->position, next_position) < 0.2;
 }
 
+// Libération de la mémoire
 void free_obstacle(obstacle_t* obstacle){
 
-    for(int i = 0; i < obstacle->sprite_count; i++){
-        free(obstacle->textures[0]);
-    }
-    free(obstacle->textures);
+    free(obstacle->texture);
     free_vector2(obstacle->position);
+    for(int i = 0; i < 4; i++){
+        free_vector2(obstacle->corners[i]);
+    }
+    free(obstacle->corners);
     free(obstacle);
 }

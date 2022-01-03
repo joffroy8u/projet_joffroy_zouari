@@ -4,6 +4,16 @@
 #include "SDL_utils.h"
 #include "building.h"
 
+void load_buildings(building_t** buildings){
+
+    char building_file_name[35] = "buildings/building_0.txt";
+    for(int i = 0; i < BUILDINGS_COUNT; i++){
+        sprintf(building_file_name, "buildings/building_%d.txt", i);
+        buildings[i] = load_building(building_file_name);
+    }
+}
+
+// Chargement d'un bâtiment depuis un fichier
 building_t* load_building(char* file_name){
 
     FILE* building_file;
@@ -11,7 +21,7 @@ building_t* load_building(char* file_name){
     building_file = fopen(file_name, "r");
     if(building_file == NULL){
         
-        perror ("Error opening file");
+        printf("Erreur lors de l'ouverture du fichier\n");
     }
 
     // Nom du fichier de la texture du batiment
@@ -51,6 +61,7 @@ building_t* load_building(char* file_name){
     return building;
 }
 
+// Chargement de la texture d'un bâtiment
 uint32_t* load_building_texture(char* file_name){
 
     SDL_Surface* surface = load_png_surface(file_name);

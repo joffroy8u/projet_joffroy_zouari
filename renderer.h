@@ -9,6 +9,15 @@
 #include "building.h"
 #include "obstacle.h"
 
+#define PI 3.141592568
+#define SCREEN_WIDTH 512
+#define SCREEN_HEIGHT 512
+#define SKY_COLOR 0xbce7ffff
+#define GROUND_COLOR 0x737373ff
+#define FOV 1.0467 // PI / 3
+#define MAX_BUILDING_HEIGHT 2.0
+#define OBSTACLE_TEXTURE_SIZE 256
+
 uint32_t* init_texture(int width, int height, uint32_t color);
 void draw_column(uint32_t* texture, int width, int height, building_t* building, int tex_coord, int x, int min_y, int max_y, int max_y_ground, float current_height);
 void clear_texture(uint32_t* texture, int width, int height);
