@@ -10,9 +10,12 @@ https://github.com/joffroy8u/projet_joffroy_zouari
 
 # Compilation :
 
-Commande **make** depuis le dossier du projet.
+**make** depuis le dossier du projet.
+
+Exécution : **./main**
 
 Libs nécessaires : -lSDL2_ttf  -lSDL2_image
+
 
 ***
 
